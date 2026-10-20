@@ -1,5 +1,0 @@
-<p>Lawnicons, Lawnchair ekibi ve dünya çapındaki katkıda bulunanlar tarafından oluşturulan ücretsiz, topluluk odaklı, açık kaynaklı bir simge paketidir.
-
-Lawnchair ve çoğu üçüncü parti başlatıcı ile çalışır - başlatınıcınızın ayarlarından uygulayın.
-
-Reklam yok, ödeme yok, abonelik yok, sadece ana ekranınız için minimal, uyarlanabilir Material You simgeleri.</p>

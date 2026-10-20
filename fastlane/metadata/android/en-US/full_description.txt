@@ -1,5 +1,0 @@
-<p>Lawnicons is a free, community-driven, open-source icon pack built by the Lawnchair team and contributors worldwide.
-
-Works with Lawnchair and most third-party launchers — apply it in your launcher's settings.
-
-No ads, no payments, no subscriptions — just minimal adaptive Material You icons for your home screen.</p>

@@ -1,5 +1,0 @@
-<p>Lawnicons este un pachet de iconițe gratuit, dezvoltat de comunitate și cu sursă deschisă, creat de echipa Lawnchair și de contribuitori din întreaga lume.
-
-Funcționează cu Lawnchair și cu majoritatea lansatoarelor terțe — aplică-l din setările lansatorului tău.
-
-Fără reclame, fără plăți, fără abonamente — doar iconițe adaptive Material You, minimaliste, pentru ecranul tău principal.</p>

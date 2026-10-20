@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - "version.properties"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Read version from version.properties
+        id: version
+        run: |
+          VERSION_NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
+          VERSION_CODE=$(grep '^versionCode=' version.properties | cut -d'=' -f2)
+          echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ runner.temp }}/release.jks
+
+      - name: Create keystore.properties
+        run: |
+          cat > keystore.properties <<EOF
+          storeFile=${{ runner.temp }}/release.jks
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+
+      - name: Build release APK
+        run: ./gradlew assembleAppRelease
+
+      - name: Find APK file
+        id: apk
+        run: |
+          APK=$(find app/build/outputs -name "Mowicons*_release.apk" | head -1)
+          echo "apk=$APK" >> $GITHUB_OUTPUT
+
+      - name: Create git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.version.outputs.versionName }}"
+          git push origin "v${{ steps.version.outputs.versionName }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Mowicons ${{ steps.version.outputs.versionName }}"
+          tag_name: "v${{ steps.version.outputs.versionName }}"
+          body: |
+            ## Mowicons ${{ steps.version.outputs.versionName }}
+
+            ### What's new
+            See [commit history](https://github.com/${{ github.repository }}/commits/v${{ steps.version.outputs.versionName }}) for changes.
+
+            ### Installation
+            Download the APK below and install it on your Android device.
+            > You may need to enable **Install from unknown sources** in your device settings.
+          files: ${{ steps.apk.outputs.apk }}
+          draft: false
+          prerelease: false

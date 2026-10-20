@@ -1,14 +1,23 @@
-import app.cash.licensee.SpdxId
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.Properties
+import javax.imageio.ImageIO
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.licensee)
     alias(libs.plugins.metro)
 }
+
+// Load version from version.properties (single source of truth)
+val versionProps = Properties().also {
+    it.load(rootProject.file("version.properties").inputStream())
+}
+val versionName = versionProps.getProperty("versionName") ?: "0.0.1"
+val versionCode = (versionProps.getProperty("versionCode") ?: "1").toInt()
 
 val buildCommit = providers.exec {
     commandLine("git", "rev-parse", "--short=7", "HEAD")
@@ -20,18 +29,21 @@ val ciRunNumber = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull.orEm
 val isReleaseBuild = ciBuild && ciRef.contains("main")
 val devReleaseName = if (ciBuild) "(Dev #$ciRunNumber)" else "($buildCommit)"
 
-val version = "2.19.0"
-val versionDisplayName = version + if (!isReleaseBuild) " $devReleaseName" else ""
+val versionDisplayName = versionName + if (!isReleaseBuild) " $devReleaseName" else ""
+
+// Providers for use in androidComponents (lazy evaluation)
+val versionNameProvider = providers.provider { versionName }
+val versionCodeProvider = providers.provider { versionCode }
 
 android {
     compileSdk = 37
-    namespace = "app.lawnchair.lawnicons"
+    namespace = "app.galib.mowicons"
 
     defaultConfig {
-        applicationId = "app.lawnchair.lawnicons"
+        applicationId = "app.galib.mowicons"
         minSdk = 26
         targetSdk = compileSdk
-        versionCode = 27
+        versionCode = versionCode
         versionName = versionDisplayName
         vectorDrawables.useSupportLibrary = true
         buildConfigField("String", "COMMIT_HASH", "\"${buildCommit}\"")
@@ -74,7 +86,7 @@ android {
     productFlavors {
         create("app") {
             dimension = "product"
-            resValue("string", "apps_name", "Lawnicons")
+            resValue("string", "apps_name", "Mowicons")
         }
     }
     sourceSets.getByName("app") {
@@ -107,11 +119,135 @@ android {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Icon pack template
+//
+// A minimal icon pack APK (a manifest with the icon pack intent filters, an
+// appfilter and one placeholder drawable per icon slot) is compiled with aapt2
+// at build time and shipped in the assets of the app. At export time the app
+// fills in the painted icons and the appfilter, signs the APK and saves it as
+// a plain file.
+// ---------------------------------------------------------------------------
+val iconPackSlots = 512
+val packTemplateDir = layout.buildDirectory.dir("pack-template")
+val packTemplateAssetsDir = layout.buildDirectory.dir("pack-template-assets")
+val packTemplateApk = packTemplateAssetsDir.map { it.file("iconpack-template.apk") }
+val sdkDirectoryPath = provider {
+    val localProperties = rootProject.file("local.properties")
+    localProperties.takeIf { it.exists() }
+        ?.readLines()
+        ?.firstOrNull { it.startsWith("sdk.dir=") }
+        ?.substringAfter("=")
+        ?: System.getenv("ANDROID_HOME")
+        ?: System.getenv("ANDROID_SDK_ROOT")
+        ?: error("The Android SDK could not be found")
+}
+
+abstract class BuildIconPackTemplate : DefaultTask() {
+    @get:InputFile
+    abstract val manifestFile: RegularFileProperty
+
+    @get:InputFile
+    abstract val appfilterFile: RegularFileProperty
+
+    @get:Input
+    abstract val slots: Property<Int>
+
+    @get:Input
+    abstract val sdkDirectory: Property<String>
+
+    @get:Internal
+    abstract val workingDirectory: DirectoryProperty
+
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
+
+    @TaskAction
+    fun build() {
+        val resDir = File(workingDirectory.get().asFile, "res").apply {
+            deleteRecursively()
+            mkdirs()
+        }
+        File(resDir, "xml").mkdirs()
+        File(resDir, "drawable-xxxhdpi").mkdirs()
+        appfilterFile.get().asFile.copyTo(File(resDir, "xml/appfilter.xml"), overwrite = true)
+
+        // One transparent placeholder PNG per icon slot, so that the compiled
+        // resources contain a drawable entry for every icon the pack can hold.
+        val image = BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB)
+        val png = ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
+        repeat(slots.get()) { index ->
+            File(resDir, "drawable-xxxhdpi/icon_%04d.png".format(index + 1)).writeBytes(png)
+        }
+
+        val sdkDirectoryFile = File(sdkDirectory.get())
+        val aapt2 = File(sdkDirectoryFile, "build-tools").listFiles()
+            ?.filter { it.isDirectory }
+            ?.maxByOrNull { it.name }
+            ?.let { File(it, "aapt2") }
+            ?.takeIf { it.canExecute() }
+            ?: throw GradleException("aapt2 could not be found in $sdkDirectoryFile")
+        val androidJar = File(sdkDirectoryFile, "platforms").listFiles()
+            ?.filter { it.isDirectory }
+            ?.maxByOrNull { it.name }
+            ?.let { File(it, "android.jar") }
+            ?.takeIf { it.exists() }
+            ?: throw GradleException("android.jar could not be found in $sdkDirectoryFile")
+
+        val flats = File(workingDirectory.get().asFile, "resources-flat.zip")
+        val apk = outputFile.get().asFile
+        apk.parentFile.mkdirs()
+        aapt2Exec(aapt2, "compile", "--dir", resDir.absolutePath, "-o", flats.absolutePath)
+        aapt2Exec(
+            aapt2, "link",
+            "-o", apk.absolutePath,
+            "-I", androidJar.absolutePath,
+            "--manifest", manifestFile.get().asFile.absolutePath,
+            "-R", flats.absolutePath,
+            "--auto-add-overlay",
+        )
+    }
+
+    private fun aapt2Exec(aapt2: File, vararg command: String) {
+        val process = ProcessBuilder(listOf(aapt2.absolutePath) + command)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.readBytes().toString(Charsets.UTF_8)
+        if (process.waitFor() != 0) {
+            throw GradleException("aapt2 ${command.joinToString(" ")} failed:\n$output")
+        }
+    }
+}
+
+val buildIconPackTemplate = tasks.register<BuildIconPackTemplate>("buildIconPackTemplate") {
+    manifestFile.set(rootProject.layout.projectDirectory.file("pack-template/AndroidManifest.xml"))
+    appfilterFile.set(rootProject.layout.projectDirectory.file("pack-template/appfilter.xml"))
+    slots.set(iconPackSlots)
+    sdkDirectory.set(sdkDirectoryPath)
+    workingDirectory.set(packTemplateDir)
+    outputFile.set(packTemplateApk)
+}
+
+android {
+    sourceSets.getByName("main") {
+        assets.srcDir(packTemplateAssetsDir.get().asFile)
+    }
+}
+
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
+    dependsOn(buildIconPackTemplate)
+}
+
+// The lint tasks read the merged assets, so they need the icon pack template as well.
+tasks.matching { it.name.contains("lint", ignoreCase = true) }.configureEach {
+    dependsOn(buildIconPackTemplate)
+}
+
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
             with(output) {
-                val newApkName = "Lawnicons ${versionName.get()} v${versionCode.get()}_${variant.buildType}.apk"
+                val newApkName = "Mowicons ${versionNameProvider.get()} v${versionCodeProvider.get()}_${variant.buildType}.apk"
                 outputFileName = newApkName
             }
         }
@@ -123,14 +259,6 @@ composeCompiler {
         layout.projectDirectory.file("compose_compiler_config.conf"),
     )
     reportsDestination = layout.buildDirectory.dir("compose_build_reports")
-}
-
-licensee {
-    allow(SpdxId.Apache_20)
-    allow(SpdxId.MIT)
-
-    bundleAndroidAsset = true
-    androidAssetReportPath = "licenses.json"
 }
 
 dependencies {
@@ -158,6 +286,9 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
+
+    // Signs the exported icon pack.
+    implementation(libs.apksig)
 
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)

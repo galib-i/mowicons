@@ -1,5 +1,0 @@
-<p>Lawnicons é um pacote de ícones livre, dirigido pela comunidade, de código aberto construído pela equipe da Lawnchair e contribuidores do mundo inteiro.
-
-Funciona com Lawnchair e a maioria dos launchers de terceiros — aplique-o nas suas configurações de launcher.
-
-Sem anúncios, sem pagamentos, sem inscrições — apenas ícones minimalistas adaptados ao Material You para sua tela inicial.</p>

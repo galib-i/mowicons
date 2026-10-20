@@ -2,9 +2,7 @@
     <!-- General -->
 
     <!-- Application name -->
-    <string name="app_name" translatable="false">Lawnicons</string>
-    <!-- Version name, with %s as the version code -->
-    <string name="version_x">Version %s</string>
+    <string name="app_name" translatable="false">Mowicons</string>
     <!-- Accessibility label for Back button -->
     <string name="back">Back</string>
 
@@ -26,38 +24,61 @@
 
     <!-- Toolbar actions -->
 
-    <!-- New icons button, with %1$s as the version name -->
-    <string name="new_icons_in_version">New icons in v%1$s</string>
-    <!-- Discord link -->
-    <string name="discord" translatable="false">Discord</string>
     <!-- GitHub repository link-->
     <string name="github" translatable="false">GitHub</string>
-    <!-- Open Collective link-->
-    <string name="open_collective" translatable="false">Open Collective</string>
-    <!-- Icon request dashboard link -->
-    <string name="icon_request_dashboard">Icon request dashboard</string>
-    <!-- Label for the icon request action in the toolbar -->
-    <string name="request_icons">Request icons</string>
-
-
-    <!-- Snackbar content -->
-
-    <!-- When all icons are fulfilled -->
-    <string name="icon_requests_fulfilled">All icons are supported. Report rebrandings via GitHub issues.</string>
-    <!-- When icon requests are turned off via the JSON in the website -->
-    <string name="icon_requests_suspended">Icon requests open for a limited time with every new Lawnicons release.</string>
 
     <!-- Label for the About screen and toolbar action -->
     <string name="about">About</string>
+
+    <!-- Label for the installed apps screen and toolbar action -->
+    <string name="apps">Apps</string>
+
+    <!-- Title of the installed apps screen, which shows the painted icons of the apps -->
+    <string name="painted_apps">Painted Apps</string>
+
+    <!-- Label for the toggle which turns the color picker of the apps screen on and off -->
+    <string name="change_color">Change color</string>
+
+    <!-- Exporting the painted icons as an icon pack -->
+
+    <!-- Accessibility label for the button which exports the painted icons -->
+    <string name="export_painted_icons">Export painted icons</string>
+
+    <!-- Title of the confirmation shown before exporting the painted icons -->
+    <string name="export_painted_icons_title">Export painted icons?</string>
+
+    <!-- Text of the confirmation shown before exporting the painted icons -->
+    <string name="export_painted_icons_text">This builds an icon pack with the painted icons of the %1$d covered apps and saves it as an APK file, which can then be installed and selected as an icon pack in your launcher.</string>
+
+    <!-- Button which confirms the export of the painted icons -->
+    <string name="export">Export</string>
+
+    <!-- Button which dismisses the export confirmation -->
+    <string name="cancel">Cancel</string>
+
+    <!-- Button which opens the exported icon pack, so that it can be installed -->
+    <string name="install">Install</string>
+
+    <!-- Snackbar content shown while the icon pack is being built -->
+    <string name="export_painted_icons_building">Building the icon pack…</string>
+
+    <!-- Snackbar content shown when the icon pack was saved, with the name of the file -->
+    <string name="export_painted_icons_saved">Saved %1$s</string>
+
+    <!-- Button which dismisses the result of the export -->
+    <string name="ok">OK</string>
+
+    <!-- Snackbar content shown when the icon pack could not be built, with the reason -->
+    <string name="export_painted_icons_failed">Could not export the icons: %1$s</string>
 
     <!-- Contributors section of About page -->
 
     <!-- Contributors label -->
     <string name="contributors">Contributors</string>
     <!-- Core Contributors label -->
-    <string name="core_contributors">Core contributors</string>
+    <string name="core_contributors">Lawnicons core contributors</string>
     <!-- Item that links to the Contributors page -->
-    <string name="see_all_contributors">See all contributors</string>
+    <string name="see_all_contributors">See all Lawnicons contributors</string>
 
     <!-- Subtitles below users who contributed to the app -->
 
@@ -71,14 +92,14 @@
     <!-- Special thanks section of About screen -->
 
     <!-- Special thanks label -->
-    <string name="special_thanks">Special thanks</string>
+    <string name="special_thanks">Lawnicons special thanks</string>
     <!-- Subtitle displayed below the user who inspired the app icon -->
     <string name="special_thanks_icon">For inspiring the app icon</string>
     <!-- Subtitle displayed below the user who named the app -->
     <string name="special_thanks_name">For naming the app</string>
 
     <!-- List item that links to the Acknowledgements page -->
-    <string name="acknowledgements">Open-source licenses</string>
+    <string name="acknowledgements">Acknowledgements</string>
 
     <!-- Icon information popup sheet -->
 
@@ -99,95 +120,6 @@
     <!-- Share button on icon info popup -->
     <string name="share">Share details</string>
 
-    <!-- Title for the screen showing apps with missing icons -->
-    <string name="missing_icons">Missing icons</string>
-
-    <!-- Leftmost button, to control selection of state -->
-
-    <!-- Button to clear the selection of icons -->
-    <string name="clear_all">Clear selection</string>
-    <!-- Button to select all icons -->
-    <string name="select_all">Select all</string>
-
-    <!-- Split button -->
-
-    <!-- Button to send email -->
-    <string name="send_email">Send email</string>
-    <!-- Accessibility action to show the options sheet -->
-    <string name="show_options_sheet">Show options sheet</string>
-
-    <!-- Content description for the expanded state of a toggle button -->
-    <string name="toggle_button_expanded">Expanded</string>
-    <!-- Content description for the collapsed state of a toggle button -->
-    <string name="toggle_button_collapsed">Collapsed</string>
-    <!-- Content description for a toggle button -->
-    <string name="toggle_button_content_description">Toggle button</string>
-
-    <!-- Dropdown items in split button -->
-
-    <!-- Option to share the icon request as a file -->
-    <string name="share_file">Share file</string>
-    <!-- Option to save the icon request to a file -->
-    <string name="save_file">Save file</string>
-    <!-- Option to copy the component IDs for the selected icons -->
-    <string name="copy_components">Copy app IDs</string>
-
-    <!-- Toasts -->
-
-    <!-- Toast shown when a file is successfully saved -->
-    <string name="toast_file_saved_successful">Successfully saved file</string>
-    <!-- Toast shown when there is an error saving a file -->
-    <string name="toast_file_save_error">Error saving file</string>
-    <!-- Toast shown when there is an error creating a zip file -->
-    <string name="toast_file_zip_error">Could not create request file</string>
-    <!-- Toast shown when no app is found to handle an action -->
-    <string name="toast_no_app_available">No app to handle this action</string>
-
     <!-- Toast message shown when text is copied to the clipboard -->
     <string name="copied_text">Copied text</string>
-
-    <!-- New icons screen -->
-
-    <!-- Label for the new icons section, with %1$s as the count of new icons -->
-    <string name="new_icons">New icons (%1$s)</string>
-    <string name="action_menu_overflow_description">More options</string>
-
-    <!-- Bug report -->
-
-    <!-- Title shown for the bug report -->
-    <string name="bug_report">Lawnicons bug report</string>
-    <!-- Notification title shown when %1$s crashes -->
-    <string name="crash_report_notif_title">%1$s crashed</string>
-    <!-- Action to upload a crash log -->
-    <string name="action_upload">Upload crash log</string>
-
-    <!-- Action to copy text -->
-    <string name="action_copy">Copy</string>
-    <!-- Action to copy a link -->
-    <string name="action_copy_link">Copy link</string>
-
-    <!-- Message shown when uploading fails -->
-    <string name="action_upload_error">Upload failed</string>
-    <!-- Status shown while a bug report is being uploaded -->
-    <string name="dogbin_uploading">Uploading…</string>
-
-    <!-- Name of the notification channel for bug reports -->
-    <string name="bugreport_channel_name">Bug reports</string>
-    <!-- Name of the notification channel for upload status updates -->
-    <string name="status_channel_name">Upload status</string>
-
-    <!-- Summary of a group of bug report notifications, with %d as the number of reports -->
-    <string name="bugreport_group_summary">%d new reports</string>
-    <!-- Summary shown for a group of multiple bug report notifications -->
-    <string name="bugreport_group_summary_multiple">Multiple new reports</string>
-
-    <!-- Label for the notification permission prompt -->
-    <string name="notification_permission_label">Notifications permission needed</string>
-    <!-- Explanation of why the app needs notification permission -->
-    <string name="notification_permission_desc">To notify you when %1$s experiences an issue, %1$s needs permission to send notifications</string>
-
-    <!-- Button to grant notification permission -->
-    <string name="notification_permission_grant">Allow</string>
-    <!-- Button to dismiss the notification permission prompt -->
-    <string name="notification_permission_dismiss">Not now</string>
 </resources>

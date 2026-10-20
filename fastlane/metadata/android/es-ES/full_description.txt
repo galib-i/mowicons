@@ -1,5 +1,0 @@
-<p>Lawnicons es un paquete de iconos gratuito, impulsado por la comunidad y de código abierto, creado por el equipo de Lawnchair y colaboradores de todo el mundo.
-
-Funciona con Lawnchair y la mayoría de los lanzadores de terceros; aplícalo en la configuración de tu lanzador.
-
-Sin anuncios, sin pagos, sin suscripciones — solo iconos Material minimalistas y adaptativos para tu pantalla principal.</p>

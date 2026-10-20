@@ -1,5 +1,0 @@
-<p>Ang Lawnicons ay isang libre at open-source na icon pack na binuo ng Lawnchair team at ng mga contributor mula sa iba't ibang panig ng mundo, at ito ay pinatatakbo ng komunidad.
-
-Gumagana sa Lawnchair at sa karamihan ng mga third-party launcher — piliin ito sa mga setting ng iyong launcher.
-
-Walang mga ad, walang mga bayad, walang mga subscription — kaunting adaptive na mga icon ng Material You para sa iyong home screen.</p>
