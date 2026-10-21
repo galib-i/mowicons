@@ -24,7 +24,10 @@ import app.galib.mowicons.data.model.IconInfo
 import app.galib.mowicons.data.model.InstalledApp
 import app.galib.mowicons.data.repository.IconPackExportRepository
 import app.galib.mowicons.data.repository.InstalledAppsRepository
+import app.galib.mowicons.data.repository.PreferenceManager
 import app.galib.mowicons.data.repository.home.IconRepository
+import app.galib.mowicons.data.util.decodeSelectedColors
+import app.galib.mowicons.data.util.encodeSelectedColors
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -36,7 +39,7 @@ import java.io.File
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 
 /**
@@ -59,6 +62,7 @@ class AppsViewModel(
     installedAppsRepository: InstalledAppsRepository,
     private val iconRepository: IconRepository,
     private val iconPackExportRepository: IconPackExportRepository,
+    private val preferenceManager: PreferenceManager,
 ) : ViewModel() {
 
     /**
@@ -97,8 +101,12 @@ class AppsViewModel(
 
     /**
      * The colours picked by the user for apps, keyed by the package name of the app.
+     * The picks are restored from the preferences, so that they are remembered across restarts
+     * of the app.
      */
-    private val _selectedColors = MutableStateFlow<Map<String, Int>>(emptyMap())
+    private val _selectedColors = MutableStateFlow<Map<String, Int>>(
+        decodeSelectedColors(preferenceManager.selectedIconColors.get()),
+    )
     val selectedColors: StateFlow<Map<String, Int>> = _selectedColors.asStateFlow()
 
     /**
@@ -106,7 +114,8 @@ class AppsViewModel(
      * [packageName].
      */
     fun selectColor(packageName: String, color: Int) {
-        _selectedColors.update { it + (packageName to color) }
+        val colors = _selectedColors.updateAndGet { it + (packageName to color) }
+        preferenceManager.selectedIconColors.set(encodeSelectedColors(colors))
     }
 
     /**

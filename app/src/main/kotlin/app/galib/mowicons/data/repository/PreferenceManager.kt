@@ -27,6 +27,9 @@ interface PreferenceStore {
     fun getInt(key: String, defaultValue: Int): Int
     fun putInt(key: String, value: Int)
 
+    fun getString(key: String, defaultValue: String): String
+    fun putString(key: String, value: String)
+
     fun registerListener(listener: PreferenceChangeListener)
     fun unregisterListener(listener: PreferenceChangeListener)
 }
@@ -47,6 +50,13 @@ class SharedPreferencesStore(
 
     override fun putInt(key: String, value: Int) {
         prefs.edit { putInt(key, value) }
+    }
+
+    override fun getString(key: String, defaultValue: String) =
+        prefs.getString(key, defaultValue) ?: defaultValue
+
+    override fun putString(key: String, value: String) {
+        prefs.edit { putString(key, value) }
     }
 
     override fun registerListener(listener: PreferenceChangeListener) {
@@ -78,6 +88,13 @@ class InMemoryPreferenceStore : PreferenceStore {
     override fun getInt(key: String, defaultValue: Int) = values[key] as? Int ?: defaultValue
 
     override fun putInt(key: String, value: Int) {
+        values[key] = value
+        notifyChanged(key)
+    }
+
+    override fun getString(key: String, defaultValue: String) = values[key] as? String ?: defaultValue
+
+    override fun putString(key: String, value: String) {
         values[key] = value
         notifyChanged(key)
     }
@@ -173,6 +190,20 @@ abstract class BasePreferenceManager(
             }
         }
     }
+
+    /**
+     * A class that represents a string preference
+     * @param key The key of the preference
+     * @param defaultValue The default value of the preference
+     */
+    @Stable
+    inner class StringPref(
+        val key: String,
+        private val defaultValue: String,
+    ) {
+        fun get() = store.getString(key, defaultValue)
+        fun set(value: String) = store.putString(key, value)
+    }
 }
 
 @Inject
@@ -182,4 +213,10 @@ class PreferenceManager(
 ) : BasePreferenceManager(store) {
     val forceEnableIconRequest = BoolPref("force_icon_request", false)
     val isFirstLaunch = BoolPref("first_launch", true)
+
+    /**
+     * The foreground colours picked by the user for the icons of the apps, encoded as a JSON
+     * object which maps the package name of the app to the colour.
+     */
+    val selectedIconColors = StringPref("selected_icon_colors", "")
 }

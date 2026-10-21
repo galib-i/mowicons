@@ -28,6 +28,7 @@ class PreferenceManagerTest {
     ) : BasePreferenceManager(store) {
         val boolPref = BoolPref("bool_key", false)
         val intPref = IntPref("int_key", 7)
+        val stringPref = StringPref("string_key", "default")
     }
 
     @Test
@@ -85,6 +86,44 @@ class PreferenceManagerTest {
     }
 
     @Test
+    fun `string pref returns default before writes`() {
+        val manager = TestPreferenceManager(InMemoryPreferenceStore())
+
+        assertEquals("default", manager.stringPref.get())
+    }
+
+    @Test
+    fun `string pref set persists value`() {
+        val manager = TestPreferenceManager(InMemoryPreferenceStore())
+
+        manager.stringPref.set("value")
+
+        assertEquals("value", manager.stringPref.get())
+    }
+
+    @Test
+    fun `string pref keeps the value of an empty string`() {
+        val manager = TestPreferenceManager(InMemoryPreferenceStore())
+
+        manager.stringPref.set("")
+
+        assertEquals("", manager.stringPref.get())
+    }
+
+    @Test
+    fun `prefs of different types keep values isolated by key`() {
+        val manager = TestPreferenceManager(InMemoryPreferenceStore())
+
+        manager.boolPref.set(true)
+        manager.intPref.set(99)
+        manager.stringPref.set("value")
+
+        assertTrue(manager.boolPref.get())
+        assertEquals(99, manager.intPref.get())
+        assertEquals("value", manager.stringPref.get())
+    }
+
+    @Test
     fun `in memory store notifies listeners for changed key`() {
         val store = InMemoryPreferenceStore()
         val changedKeys = mutableListOf<String>()
@@ -100,6 +139,20 @@ class PreferenceManagerTest {
     }
 
     @Test
+    fun `in memory store notifies listeners for changed string key`() {
+        val store = InMemoryPreferenceStore()
+        val changedKeys = mutableListOf<String>()
+        val listener = PreferenceChangeListener { key -> changedKeys += key }
+
+        store.registerListener(listener)
+        store.putString("text", "value")
+        store.unregisterListener(listener)
+        store.putString("ignored", "value")
+
+        assertEquals(listOf("text"), changedKeys)
+    }
+
+    @Test
     fun `preference manager force icon request defaults false and can be enabled`() {
         val manager = PreferenceManager(InMemoryPreferenceStore())
 
@@ -107,5 +160,15 @@ class PreferenceManagerTest {
         manager.forceEnableIconRequest.set(true)
 
         assertTrue(manager.forceEnableIconRequest.get())
+    }
+
+    @Test
+    fun `preference manager selected icon colors default to empty and can be set`() {
+        val manager = PreferenceManager(InMemoryPreferenceStore())
+
+        assertEquals("", manager.selectedIconColors.get())
+        manager.selectedIconColors.set("""{"com.android.email":-16777216}""")
+
+        assertEquals("""{"com.android.email":-16777216}""", manager.selectedIconColors.get())
     }
 }

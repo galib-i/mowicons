@@ -71,7 +71,7 @@ import app.galib.mowicons.ui.components.home.iconpreview.IconPreview
 import app.galib.mowicons.ui.theme.icon.Check
 import app.galib.mowicons.ui.theme.icon.LawnIcons
 import app.galib.mowicons.ui.theme.icon.Palette
-import app.galib.mowicons.ui.theme.icon.Settings
+import app.galib.mowicons.ui.theme.icon.Wrench
 import app.galib.mowicons.ui.util.PreviewLawnicons
 import app.galib.mowicons.ui.util.PreviewProviders
 import app.galib.mowicons.ui.util.SampleData
@@ -145,7 +145,7 @@ private fun AppsScreen(
         actions = {
             IconButton(onClick = { showExportDialog = true }) {
                 Icon(
-                    imageVector = LawnIcons.Settings,
+                    imageVector = LawnIcons.Wrench,
                     contentDescription = stringResource(R.string.export_painted_icons),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -360,15 +360,44 @@ private fun InstalledAppItem(
                 modifier = Modifier.size(IconSize),
             )
         }
-        Text(
+        TruncatedLabel(
             text = app.label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 4.dp),
         )
     }
+}
+
+/**
+ * The suffix which marks a label which had to be shortened.
+ */
+private const val TruncationSuffix = "..."
+
+/**
+ * The amount of characters a label may have before it is shortened.
+ */
+private const val MaxLabelLength = 10
+
+/**
+ * A label which is shortened to [MaxLabelLength] characters, ending with [TruncationSuffix],
+ * if it is longer than that.
+ */
+@Composable
+private fun TruncatedLabel(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    val shortenedText = remember(text) {
+        if (text.length > MaxLabelLength) text.take(MaxLabelLength) + TruncationSuffix else text
+    }
+    Text(
+        text = shortenedText,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
 }
 
 /**
