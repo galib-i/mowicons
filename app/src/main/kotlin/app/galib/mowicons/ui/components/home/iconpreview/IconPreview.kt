@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.graphics.shapes.RoundedPolygon
 import app.galib.mowicons.data.model.IconInfo
 import app.galib.mowicons.ui.LocalLawniconsActions
 import app.galib.mowicons.ui.theme.PrimaryBackgroundColor
@@ -50,6 +51,7 @@ fun IconPreview(
     modifier: Modifier = Modifier,
     iconBackground: Color? = null,
     tint: Color? = null,
+    shape: RoundedPolygon? = null,
     showSheet: Boolean = false,
     onToggleSheet: (Boolean) -> Unit = {},
 ) {
@@ -60,6 +62,7 @@ fun IconPreview(
         modifier = modifier,
         iconBackground = iconBackground,
         tint = tint,
+        shape = shape,
         isIconPicker = actions.isIconPicker,
         showSheet = showSheet,
         onToggleSheet = onToggleSheet,
@@ -74,6 +77,7 @@ fun IconPreview(
     modifier: Modifier = Modifier,
     iconBackground: Color? = null,
     tint: Color? = null,
+    shape: RoundedPolygon? = null,
     isIconPicker: Boolean = false,
     showSheet: Boolean = false,
     onToggleSheet: (Boolean) -> Unit = {},
@@ -81,19 +85,19 @@ fun IconPreview(
     val primaryBackgroundColor = PrimaryBackgroundColor()
     val primaryForegroundColor = PrimaryForegroundColor()
     val foregroundColor = tint ?: primaryForegroundColor
-    val shape = when (iconInfo.componentNames.map { it.label }.distinct().size) {
+    val iconShape = (shape ?: when (iconInfo.componentNames.map { it.label }.distinct().size) {
         1 -> MaterialShapes.Circle
         2 -> MaterialShapes.Cookie4Sided
         3 -> MaterialShapes.Gem
         else -> MaterialShapes.VerySunny
-    }.toShape()
+    }).toShape()
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .padding(all = 8.dp)
             .aspectRatio(ratio = 1F)
-            .clip(shape = shape)
+            .clip(shape = iconShape)
             .clickable(
                 onClick = {
                     if (isIconPicker) {

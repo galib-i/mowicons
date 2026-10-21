@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.galib.mowicons.data.model.Component
 import app.galib.mowicons.data.model.IconInfo
+import app.galib.mowicons.data.model.IconShape
 import app.galib.mowicons.data.model.InstalledApp
 import app.galib.mowicons.data.repository.IconPackExportRepository
 import app.galib.mowicons.data.repository.InstalledAppsRepository
@@ -119,6 +120,23 @@ class AppsViewModel(
     }
 
     /**
+     * The shape picked by the user for the painted icons. The pick is restored from the
+     * preferences, so that it is remembered across restarts of the app.
+     */
+    private val _selectedShape = MutableStateFlow(
+        IconShape.fromName(preferenceManager.selectedIconShape.get()),
+    )
+    val selectedShape: StateFlow<IconShape> = _selectedShape.asStateFlow()
+
+    /**
+     * Uses [shape] as the shape of the painted icons.
+     */
+    fun selectShape(shape: IconShape) {
+        _selectedShape.value = shape
+        preferenceManager.selectedIconShape.set(shape.name)
+    }
+
+    /**
      * The state of the export of the painted icons as an icon pack.
      */
     private val _exportState = MutableStateFlow<IconPackExportState>(IconPackExportState.Idle)
@@ -134,7 +152,11 @@ class AppsViewModel(
         viewModelScope.launch {
             _exportState.value = try {
                 val apps = installedApps.value.filter { it.iconInfo != null }
-                val result = iconPackExportRepository.export(apps, selectedColors.value)
+                val result = iconPackExportRepository.export(
+                    apps,
+                    selectedColors.value,
+                    selectedShape.value,
+                )
                 IconPackExportState.Saved(result.location, result.file)
             } catch (cancellation: CancellationException) {
                 throw cancellation

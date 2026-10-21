@@ -20,6 +20,7 @@ import android.app.Application
 import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.os.Build
 import android.os.Environment
@@ -28,9 +29,12 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withClip
+import androidx.graphics.shapes.toPath
 import app.galib.mowicons.R
 import app.galib.mowicons.data.export.AxmlWriter
 import app.galib.mowicons.data.model.IconInfo
+import app.galib.mowicons.data.model.IconShape
 import app.galib.mowicons.data.model.InstalledApp
 import com.android.apksig.ApkSigner
 import com.android.apksig.KeyConfig
@@ -65,9 +69,14 @@ interface IconPackExportRepository {
      * APK file, which can then be installed and used as an icon pack.
      *
      * @param selectedColors The colours picked by the user, keyed by package name.
+     * @param shape The shape the icons of the pack have.
      * @return The export result containing location and file.
      */
-    suspend fun export(apps: List<InstalledApp>, selectedColors: Map<String, Int>): ExportResult
+    suspend fun export(
+        apps: List<InstalledApp>,
+        selectedColors: Map<String, Int>,
+        shape: IconShape,
+    ): ExportResult
 }
 
 @SingleIn(AppScope::class)
@@ -79,8 +88,10 @@ class IconPackExportRepositoryImpl(
     override suspend fun export(
         apps: List<InstalledApp>,
         selectedColors: Map<String, Int>,
+        shape: IconShape,
     ): ExportResult = withContext(Dispatchers.IO) {
-        val coveredApps = apps.filter { it.iconInfo != null }.take(MAX_ICONS)
+        // The pack itself is themed with its own icon, so it is left out of the pack.
+        val coveredApps = coveredApps(apps)
         check(coveredApps.isNotEmpty()) { "There are no covered apps to export" }
 
         val template = File.createTempFile("iconpack", ".apk", application.cacheDir)
@@ -98,7 +109,7 @@ class IconPackExportRepositoryImpl(
             coveredApps.forEachIndexed { index, app ->
                 val iconInfo = requireNotNull(app.iconInfo)
                 val color = selectedColors[app.packageName] ?: app.colors.firstOrNull() ?: defaultColor
-                drawables[drawableNames[index]] = renderIcon(iconInfo, color, backgroundColor)
+                drawables[drawableNames[index]] = renderIcon(iconInfo, color, backgroundColor, shape)
             }
             val appfilter = buildAppfilter(coveredApps, drawableNames)
             val plainTextAppfilter = buildPlainTextAppfilter(coveredApps, drawableNames)
@@ -159,23 +170,38 @@ class IconPackExportRepositoryImpl(
         }
     }
 
-    /** Renders the icon of the pack as the app shows it: the tinted glyph on a circle. */
-    private fun renderIcon(iconInfo: IconInfo, color: Int, backgroundColor: Int): ByteArray {
+    /**
+     * The apps which are covered by the pack, i.e. the ones which get a painted icon.
+     * The pack itself is left out, as it is themed with its own icon.
+     */
+    internal fun coveredApps(apps: List<InstalledApp>): List<InstalledApp> = apps
+        .filter { it.iconInfo != null }
+        .filterNot { it.packageName == PACK_PACKAGE }
+        .take(MAX_ICONS)
+
+    /** Renders the icon of the pack as the app shows it: the tinted glyph on the shape. */
+    private fun renderIcon(
+        iconInfo: IconInfo,
+        color: Int,
+        backgroundColor: Int,
+        shape: IconShape,
+    ): ByteArray {
         val bitmap = createBitmap(ICON_SIZE, ICON_SIZE)
         val canvas = Canvas(bitmap)
-        canvas.drawCircle(
-            ICON_SIZE / 2f,
-            ICON_SIZE / 2f,
-            ICON_SIZE / 2f,
-            Paint().apply { this.color = backgroundColor },
-        )
+        val path = shape.polygon.toPath()
+        // The polygons are normalized to the unit square, so they have to be scaled up.
+        path.transform(Matrix().apply { setScale(ICON_SIZE.toFloat(), ICON_SIZE.toFloat()) })
+        canvas.drawPath(path, Paint().apply { this.color = backgroundColor; isAntiAlias = true })
 
         val drawable = ResourcesCompat.getDrawable(application.resources, iconInfo.drawableId, null)
             ?: throw IOException("Could not load the icon ${iconInfo.drawableName}")
         val inset = (ICON_SIZE * 0.2f).toInt()
         drawable.setBounds(inset, inset, ICON_SIZE - inset, ICON_SIZE - inset)
         androidx.core.graphics.drawable.DrawableCompat.setTint(drawable, color)
-        drawable.draw(canvas)
+        // The glyph is clipped to the shape, just like it is in the app.
+        canvas.withClip(path) {
+            drawable.draw(this)
+        }
 
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
@@ -184,7 +210,7 @@ class IconPackExportRepositoryImpl(
     }
 
     /** Builds the binary appfilter which maps the apps to the icons of the pack. */
-    private fun buildAppfilter(apps: List<InstalledApp>, drawableNames: List<String>): ByteArray {
+    internal fun buildAppfilter(apps: List<InstalledApp>, drawableNames: List<String>): ByteArray {
         val items = apps.mapIndexed { index, app ->
             AxmlWriter.Element(
                 name = "item",
@@ -194,12 +220,22 @@ class IconPackExportRepositoryImpl(
                     "name" to app.label,
                 ),
             )
-        }
+        } + AxmlWriter.Element(name = "item", attributes = packItemAttributes)
         return AxmlWriter.build(AxmlWriter.Element(name = "resources", children = items))
     }
 
+    /**
+     * The attributes of the item which maps the icon pack itself to its own icon, so that
+     * the launcher themes the icon of the pack as well.
+     */
+    private val packItemAttributes = listOf(
+        "component" to "ComponentInfo{$PACK_PACKAGE/$PACK_ACTIVITY}",
+        "drawable" to PACK_DRAWABLE,
+        "name" to PACK_LABEL,
+    )
+
     /** Builds the plain text appfilter for assets. */
-    private fun buildPlainTextAppfilter(apps: List<InstalledApp>, drawableNames: List<String>): ByteArray {
+    internal fun buildPlainTextAppfilter(apps: List<InstalledApp>, drawableNames: List<String>): ByteArray {
         val sb = StringBuilder("<resources>\n")
         apps.forEachIndexed { index, app ->
             val escapedLabel = app.label
@@ -210,6 +246,9 @@ class IconPackExportRepositoryImpl(
                 .replace("'", "&apos;")
             sb.append("    <item component=\"ComponentInfo{${app.packageName}/${app.className}}\" drawable=\"${drawableNames[index]}\" name=\"$escapedLabel\" />\n")
         }
+        sb.append("    <item ${packItemAttributes.joinToString(" ") { (name, value) ->
+            "$name=\"$value\""
+        }} />\n")
         sb.append("</resources>")
         return sb.toString().toByteArray(Charsets.UTF_8)
     }
@@ -285,6 +324,21 @@ class IconPackExportRepositoryImpl(
         const val EXPORT_CERT_ASSET = "export_cert.der"
         const val SIGNER_NAME = "PaintedIcons"
         const val MIN_SDK = 26
+
+        /** The package of the exported pack. Keep in sync with the pack template. */
+        const val PACK_PACKAGE = "app.galib.paintedicons.pack"
+
+        /**
+         * The launcher activity of the exported pack. The pack contains no code, so the
+         * activity is the framework activity. Keep in sync with the pack template.
+         */
+        const val PACK_ACTIVITY = "android.app.Activity"
+
+        /** The drawable of the pack which is used for the icon of the pack itself. */
+        const val PACK_DRAWABLE = "infinite_painter"
+
+        /** The label of the exported pack. Keep in sync with the pack template. */
+        const val PACK_LABEL = "Painted Icons"
 
         const val FILE_NAME = "Painted Icons.apk"
         const val APK_MIME_TYPE = "application/vnd.android.package-archive"

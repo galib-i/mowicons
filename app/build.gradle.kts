@@ -150,6 +150,14 @@ abstract class BuildIconPackTemplate : DefaultTask() {
     @get:InputFile
     abstract val appfilterFile: RegularFileProperty
 
+    /**
+     * The additional resources of the pack, e.g. the icon of the pack itself. They are
+     * copied into the resources of the template as they are.
+     */
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val additionalResFiles: ConfigurableFileCollection
+
     @get:Input
     abstract val slots: Property<Int>
 
@@ -171,6 +179,15 @@ abstract class BuildIconPackTemplate : DefaultTask() {
         File(resDir, "xml").mkdirs()
         File(resDir, "drawable-xxxhdpi").mkdirs()
         appfilterFile.get().asFile.copyTo(File(resDir, "xml/appfilter.xml"), overwrite = true)
+
+        // The additional resources of the pack, e.g. the icon of the pack itself.
+        additionalResFiles.files.filter { it.isDirectory }.forEach { source ->
+            source.walkTopDown().filter { it.isFile }.forEach { file ->
+                val target = File(resDir, file.relativeTo(source).path)
+                target.parentFile.mkdirs()
+                file.copyTo(target, overwrite = true)
+            }
+        }
 
         // One transparent placeholder PNG per icon slot, so that the compiled
         // resources contain a drawable entry for every icon the pack can hold.
@@ -222,6 +239,7 @@ abstract class BuildIconPackTemplate : DefaultTask() {
 val buildIconPackTemplate = tasks.register<BuildIconPackTemplate>("buildIconPackTemplate") {
     manifestFile.set(rootProject.layout.projectDirectory.file("pack-template/AndroidManifest.xml"))
     appfilterFile.set(rootProject.layout.projectDirectory.file("pack-template/appfilter.xml"))
+    additionalResFiles.from(rootProject.layout.projectDirectory.dir("pack-template/res"))
     slots.set(iconPackSlots)
     sdkDirectory.set(sdkDirectoryPath)
     workingDirectory.set(packTemplateDir)

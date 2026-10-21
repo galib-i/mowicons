@@ -171,4 +171,14 @@ class PreferenceManagerTest {
 
         assertEquals("""{"com.android.email":-16777216}""", manager.selectedIconColors.get())
     }
+
+    @Test
+    fun `preference manager selected icon shape defaults to the circle and can be set`() {
+        val manager = PreferenceManager(InMemoryPreferenceStore())
+
+        assertEquals("Circle", manager.selectedIconShape.get())
+        manager.selectedIconShape.set("Heart")
+
+        assertEquals("Heart", manager.selectedIconShape.get())
+    }
 }

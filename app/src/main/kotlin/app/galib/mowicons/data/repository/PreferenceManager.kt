@@ -6,6 +6,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
 import androidx.core.content.edit
+import app.galib.mowicons.data.model.IconShape
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -219,4 +220,9 @@ class PreferenceManager(
      * object which maps the package name of the app to the colour.
      */
     val selectedIconColors = StringPref("selected_icon_colors", "")
+
+    /**
+     * The name of the shape picked by the user for the painted icons.
+     */
+    val selectedIconShape = StringPref("selected_icon_shape", IconShape.Default.name)
 }

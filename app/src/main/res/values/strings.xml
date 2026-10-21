@@ -39,6 +39,43 @@
     <!-- Label for the toggle which turns the color picker of the apps screen on and off -->
     <string name="change_color">Change color</string>
 
+    <!-- The shapes the painted icons can have -->
+
+    <!-- Title of the shape picker of the apps screen -->
+    <string name="shape">Shape</string>
+
+    <!-- The names of the shapes the painted icons can have -->
+    <string name="shape_circle">Circle</string>
+    <string name="shape_square">Square</string>
+    <string name="shape_slanted">Slanted square</string>
+    <string name="shape_arch">Arch</string>
+    <string name="shape_arrow">Arrow</string>
+    <string name="shape_semi_circle">Semi-circle</string>
+    <string name="shape_oval">Oval</string>
+    <string name="shape_pill">Pill</string>
+    <string name="shape_triangle">Triangle</string>
+    <string name="shape_diamond">Diamond</string>
+    <string name="shape_clam_shell">Clam shell</string>
+    <string name="shape_pentagon">Pentagon</string>
+    <string name="shape_gem">Gem</string>
+    <string name="shape_sunny">Sunny</string>
+    <string name="shape_very_sunny">Very sunny</string>
+    <string name="shape_cookie_4_sided">Cookie 4-sided</string>
+    <string name="shape_cookie_6_sided">Cookie 6-sided</string>
+    <string name="shape_cookie_7_sided">Cookie 7-sided</string>
+    <string name="shape_cookie_9_sided">Cookie 9-sided</string>
+    <string name="shape_cookie_12_sided">Cookie 12-sided</string>
+    <string name="shape_ghostish">Ghostish</string>
+    <string name="shape_clover_4_leaf">Clover 4-leaf</string>
+    <string name="shape_clover_8_leaf">Clover 8-leaf</string>
+    <string name="shape_burst">Burst</string>
+    <string name="shape_soft_burst">Soft burst</string>
+    <string name="shape_soft_boom">Soft boom</string>
+    <string name="shape_flower">Flower</string>
+    <string name="shape_puffy">Puffy</string>
+    <string name="shape_puffy_diamond">Puffy diamond</string>
+    <string name="shape_bun">Bun</string>
+
     <!-- Exporting the painted icons as an icon pack -->
 
     <!-- Accessibility label for the button which exports the painted icons -->

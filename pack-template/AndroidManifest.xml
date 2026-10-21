@@ -13,6 +13,8 @@
 
     <application
         android:label="Painted Icons"
+        android:icon="@drawable/infinite_painter"
+        android:roundIcon="@drawable/infinite_painter"
         android:allowBackup="false"
         android:hasCode="false"
         android:supportsRtl="true">

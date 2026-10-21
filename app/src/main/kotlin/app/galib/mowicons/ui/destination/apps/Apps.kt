@@ -22,28 +22,37 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +66,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -65,6 +77,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import app.galib.mowicons.R
+import app.galib.mowicons.data.model.IconShape
 import app.galib.mowicons.data.model.InstalledApp
 import app.galib.mowicons.ui.components.core.LawniconsScaffold
 import app.galib.mowicons.ui.components.home.iconpreview.IconPreview
@@ -106,13 +119,16 @@ private fun Apps(
 ) {
     val installedApps by appsViewModel.installedApps.collectAsStateWithLifecycle()
     val selectedColors by appsViewModel.selectedColors.collectAsStateWithLifecycle()
+    val selectedShape by appsViewModel.selectedShape.collectAsStateWithLifecycle()
     val exportState by appsViewModel.exportState.collectAsStateWithLifecycle()
 
     AppsScreen(
         installedApps = installedApps,
         selectedColors = selectedColors,
+        selectedShape = selectedShape,
         exportState = exportState,
         onSelectColor = appsViewModel::selectColor,
+        onSelectShape = appsViewModel::selectShape,
         onExportIconPack = appsViewModel::exportIconPack,
         onDismissExportResult = appsViewModel::dismissExportResult,
         onBack = onBack,
@@ -125,8 +141,10 @@ private fun Apps(
 private fun AppsScreen(
     installedApps: List<InstalledApp>,
     selectedColors: Map<String, Int>,
+    selectedShape: IconShape,
     exportState: IconPackExportState,
     onSelectColor: (String, Int) -> Unit,
+    onSelectShape: (IconShape) -> Unit,
     onExportIconPack: () -> Unit,
     onDismissExportResult: () -> Unit,
     onBack: () -> Unit,
@@ -163,26 +181,38 @@ private fun AppsScreen(
             }
         },
     ) { paddingValues ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
-            contentPadding = PaddingValues(
+        Column(
+            modifier = Modifier.padding(
                 start = paddingValues.calculateStartPadding(layoutDirection),
                 top = paddingValues.calculateTopPadding(),
                 end = paddingValues.calculateEndPadding(layoutDirection),
-                bottom = paddingValues.calculateBottomPadding(),
             ),
         ) {
-            items(
-                items = installedApps,
-                key = { it.packageName },
-            ) { app ->
-                InstalledAppItem(
-                    app = app,
-                    color = selectedColors[app.packageName] ?: app.colors.firstOrNull(),
-                    isColorPickerEnabled = isColorPickerEnabled,
-                    onSelectColor = { onSelectColor(app.packageName, it) },
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
+            ShapePicker(
+                selectedShape = selectedShape,
+                onSelectShape = onSelectShape,
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(4),
+                contentPadding = PaddingValues(
+                    bottom = paddingValues.calculateBottomPadding(),
+                ),
+                modifier = Modifier.weight(1f),
+            ) {
+                items(
+                    items = installedApps,
+                    key = { it.packageName },
+                ) { app ->
+                    InstalledAppItem(
+                        app = app,
+                        color = selectedColors[app.packageName] ?: app.colors.firstOrNull(),
+                        shape = selectedShape,
+                        isColorPickerEnabled = isColorPickerEnabled,
+                        onSelectColor = { onSelectColor(app.packageName, it) },
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                }
             }
         }
     }
@@ -315,6 +345,7 @@ private fun installIconPack(context: Context, file: File) {
 private fun InstalledAppItem(
     app: InstalledApp,
     color: Int?,
+    shape: IconShape,
     isColorPickerEnabled: Boolean,
     onSelectColor: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -333,6 +364,7 @@ private fun InstalledAppItem(
                     // IconPreview pads the icon itself, hence the additional space.
                     modifier = Modifier.size(IconSize + 16.dp),
                     tint = color?.let { Color(it) },
+                    shape = shape.polygon,
                     showSheet = showSheet,
                     onToggleSheet = { visible ->
                         if (isColorPickerEnabled) {
@@ -398,6 +430,107 @@ private fun TruncatedLabel(
         overflow = TextOverflow.Ellipsis,
         modifier = modifier,
     )
+}
+
+/**
+ * The indent of the title of the screen, which the label of the shape picker is aligned with.
+ */
+private val TitleIndent = 16.dp
+
+/**
+ * A picker which lets the user pick the shape the painted icons have.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ShapePicker(
+    selectedShape: IconShape,
+    onSelectShape: (IconShape) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(selectedShape) {
+        listState.animateScrollToItem(selectedShape.ordinal)
+    }
+    Column(modifier) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = TitleIndent),
+        ) {
+            Text(
+                text = stringResource(R.string.shape),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(selectedShape.labelRes),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        LazyRow(
+            state = listState,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            items(
+                items = IconShape.entries,
+                key = { it.name },
+            ) { shape ->
+                ShapeItem(
+                    shape = shape,
+                    isSelected = shape == selectedShape,
+                    onClick = { onSelectShape(shape) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A single shape of the [ShapePicker], which is highlighted when it is the selected one.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ShapeItem(
+    shape: IconShape,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val label = stringResource(shape.labelRes)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(44.dp)
+            .selectable(
+                selected = isSelected,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
+            .semantics { contentDescription = label },
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(shape.polygon.toShape())
+                .background(
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+                ),
+        )
+        if (isSelected) {
+            Icon(
+                imageVector = LawnIcons.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+    }
 }
 
 /**
@@ -468,8 +601,10 @@ private fun AppsScreenPreview() {
                 ),
             ),
             selectedColors = mapOf("com.android.email" to 0xFFD93025.toInt()),
+            selectedShape = IconShape.Circle,
             exportState = IconPackExportState.Idle,
             onSelectColor = { _, _ -> },
+            onSelectShape = {},
             onExportIconPack = {},
             onDismissExportResult = {},
             onBack = {},

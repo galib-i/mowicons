@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The colours of the icon of the pack. They are the same fixed hex pair as the
+         ones of the app, so that the icon of the pack looks like the icons of the pack. -->
+    <color name="primaryBackground">#222224</color>
+    <color name="primaryForeground">#C6C6C6</color>
+</resources>

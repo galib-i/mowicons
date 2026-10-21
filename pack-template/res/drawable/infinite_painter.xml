@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@color/primaryBackground"/>
+  <foreground>
+    <layer-list>
+      <item>
+        <inset android:inset="32%" android:drawable="@drawable/infinite_painter_foreground"/>
+      </item>
+    </layer-list>
+  </foreground>
+  <monochrome>
+    <layer-list>
+      <item>
+        <inset android:inset="28%" android:drawable="@drawable/infinite_painter_foreground"/>
+      </item>
+    </layer-list>
+  </monochrome>
+</adaptive-icon>
