@@ -18,6 +18,11 @@
 -dontwarn androidx.window.sidecar.SidecarProvider
 -dontwarn androidx.window.sidecar.SidecarWindowLayoutInfo
 
+# apksig encodes and decodes the ASN.1 structures of the signatures through reflection,
+# so its classes, fields and annotations have to be kept. Without this, signing the
+# exported icon pack fails in release builds.
+-keep class com.android.apksig.** { *; }
+
 # Fix Parcelable/Serializable crash when opening screens then killing the app on release mode.
 -keepclassmembers class * implements android.os.Parcelable {
     public static final android.os.Parcelable$Creator *;
