@@ -19,17 +19,7 @@ val versionProps = Properties().also {
 val versionName = versionProps.getProperty("versionName") ?: "0.0.1"
 val versionCode = (versionProps.getProperty("versionCode") ?: "1").toInt()
 
-val buildCommit = providers.exec {
-    commandLine("git", "rev-parse", "--short=7", "HEAD")
-}.standardOutput.asText.get().trim()
-
-val ciBuild = providers.environmentVariable("CI").isPresent
-val ciRef = providers.environmentVariable("GITHUB_REF").orNull.orEmpty()
-val ciRunNumber = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull.orEmpty()
-val isReleaseBuild = ciBuild && ciRef.contains("main")
-val devReleaseName = if (ciBuild) "(Dev #$ciRunNumber)" else "($buildCommit)"
-
-val versionDisplayName = versionName + if (!isReleaseBuild) " $devReleaseName" else ""
+val versionDisplayName = versionName
 
 // Providers for use in androidComponents (lazy evaluation)
 val versionNameProvider = providers.provider { versionName }
@@ -46,7 +36,12 @@ android {
         versionCode = versionCode
         versionName = versionDisplayName
         vectorDrawables.useSupportLibrary = true
-        buildConfigField("String", "COMMIT_HASH", "\"${buildCommit}\"")
+        val buildCommit = try {
+            providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }.standardOutput.asText.get().trim()
+        } catch (e: Exception) {
+            "unknown"
+        }
+        buildConfigField("String", "COMMIT_HASH", "\"$buildCommit\"")
     }
 
     androidResources {

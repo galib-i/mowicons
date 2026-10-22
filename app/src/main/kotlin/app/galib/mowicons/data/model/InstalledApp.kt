@@ -16,16 +16,12 @@
 
 package app.galib.mowicons.data.model
 
-import android.graphics.Bitmap
-
 /**
  * An app installed on the device.
  *
  * @property label The user facing name of the app.
  * @property packageName The package name of the app.
  * @property className The name of the launch activity of the app.
- * @property systemIcon The icon provided by the system, used as a fallback for apps which
- * aren't covered by the icon pack.
  * @property colors The most common colours of the system icon, used to tint the icon of
  * the pack. The first one is the default colour of the icon.
  * @property iconInfo The icon of the icon pack for the app, if the pack covers it.
@@ -34,7 +30,6 @@ data class InstalledApp(
     val label: String,
     val packageName: String,
     val className: String,
-    val systemIcon: Bitmap,
     val colors: List<Int> = emptyList(),
     val iconInfo: IconInfo? = null,
 )

@@ -18,7 +18,6 @@ package app.galib.mowicons.ui.destination.debugmenu
 
 import androidx.lifecycle.ViewModel
 import app.galib.mowicons.data.repository.NewIconsRepository
-import app.galib.mowicons.data.repository.PreferenceManager
 import app.galib.mowicons.data.repository.home.IconRepository
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
@@ -29,7 +28,6 @@ import dev.zacsweers.metrox.viewmodel.ViewModelKey
 class DebugMenuViewModel(
     iconRepository: IconRepository,
     newIconsRepository: NewIconsRepository,
-    val preferenceManager: PreferenceManager,
 ) : ViewModel() {
     val iconInfoModel = iconRepository.iconInfoModel
     val newIconsModel = newIconsRepository.newIconsInfoModel

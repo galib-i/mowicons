@@ -17,7 +17,6 @@
 package app.galib.mowicons.data.repository
 
 import android.app.Application
-import android.graphics.Bitmap
 import app.galib.mowicons.data.model.IconInfo
 import app.galib.mowicons.data.model.InstalledApp
 import org.junit.Assert.assertEquals
@@ -35,7 +34,6 @@ class IconPackExportRepositoryTest {
             label = "Infinite Painter",
             packageName = "com.brakefield.painter",
             className = "com.brakefield.painter.activities.ActivityStartup",
-            systemIcon = mock<Bitmap>(),
         )
 
         val appfilter = repository.buildPlainTextAppfilter(listOf(app), listOf("icon_0001"))
@@ -80,14 +78,12 @@ class IconPackExportRepositoryTest {
             label = "Infinite Painter",
             packageName = "com.brakefield.painter",
             className = "com.brakefield.painter.activities.ActivityStartup",
-            systemIcon = mock<Bitmap>(),
             iconInfo = iconInfo(),
         )
         val pack = InstalledApp(
             label = "Painted Icons",
             packageName = "app.galib.paintedicons.pack",
             className = "android.app.Activity",
-            systemIcon = mock<Bitmap>(),
             iconInfo = iconInfo(),
         )
 

@@ -17,12 +17,16 @@
 package app.galib.mowicons.ui.destination.apps
 
 import android.util.Log
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.galib.mowicons.data.model.Component
 import app.galib.mowicons.data.model.IconInfo
+import app.galib.mowicons.data.model.IconInfoModel
 import app.galib.mowicons.data.model.IconShape
 import app.galib.mowicons.data.model.InstalledApp
+import app.galib.mowicons.data.model.PaintedIconSettings
+import app.galib.mowicons.data.model.SearchMode
 import app.galib.mowicons.data.repository.IconPackExportRepository
 import app.galib.mowicons.data.repository.InstalledAppsRepository
 import app.galib.mowicons.data.repository.PreferenceManager
@@ -32,11 +36,11 @@ import app.galib.mowicons.data.util.encodeSelectedColors
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import java.io.File
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -65,10 +69,35 @@ class AppsViewModel(
     private val iconPackExportRepository: IconPackExportRepository,
     private val preferenceManager: PreferenceManager,
 ) : ViewModel() {
+    private val _searchMode = MutableStateFlow(SearchMode.LABEL)
+    val searchMode: StateFlow<SearchMode> = _searchMode.asStateFlow()
+
+    val searchTermTextState = TextFieldState()
+
+    val searchResults: StateFlow<IconInfoModel> = iconRepository.searchedIconInfoModel
 
     /**
-     * The apps installed on the device, each one paired with the icon of the icon pack.
-     * Apps which aren't covered by the pack keep their system icon.
+     * Searches the icons for [query] in the current [searchMode].
+     */
+    fun searchIcons(query: String) {
+        viewModelScope.launch {
+            iconRepository.search(_searchMode.value, query)
+        }
+    }
+
+    /**
+     * Uses [mode] for the search and repeats the current search with it.
+     */
+    fun changeMode(mode: SearchMode) {
+        if (_searchMode.value == mode) return
+        _searchMode.value = mode
+        searchIcons(searchTermTextState.text.toString())
+    }
+
+    /**
+     * The apps installed on the device which are covered by the icon pack, each one paired
+     * with the icon of the pack. Apps without an icon are left out, as their system icon
+     * can't be painted.
      */
     val installedApps: StateFlow<List<InstalledApp>> = combine(
         installedAppsRepository.installedApps,
@@ -88,11 +117,7 @@ class AppsViewModel(
         installedApps.mapNotNull { app ->
             val iconInfo = iconsByComponent[Component(app.packageName, app.className)]
                 ?: iconsByPackage[app.packageName]
-            if (iconInfo != null) {
-                app.copy(iconInfo = iconInfo)
-            } else {
-                null
-            }
+            iconInfo?.let { app.copy(iconInfo = it) }
         }
     }.stateIn(
         viewModelScope,
@@ -120,20 +145,48 @@ class AppsViewModel(
     }
 
     /**
-     * The shape picked by the user for the painted icons. The pick is restored from the
-     * preferences, so that it is remembered across restarts of the app.
+     * Forgets the colour picked for the app with the given [packageName], so that the
+     * app uses the global foreground colour again.
      */
-    private val _selectedShape = MutableStateFlow(
-        IconShape.fromName(preferenceManager.selectedIconShape.get()),
-    )
-    val selectedShape: StateFlow<IconShape> = _selectedShape.asStateFlow()
+    fun clearColor(packageName: String) {
+        val colors = _selectedColors.updateAndGet { it - packageName }
+        preferenceManager.selectedIconColors.set(encodeSelectedColors(colors))
+    }
 
     /**
-     * Uses [shape] as the shape of the painted icons.
+     * The settings which decide how the painted icons look. They are restored from the
+     * preferences, so that they are remembered across restarts of the app.
      */
-    fun selectShape(shape: IconShape) {
-        _selectedShape.value = shape
-        preferenceManager.selectedIconShape.set(shape.name)
+    private val _paintedIconSettings = MutableStateFlow(
+        PaintedIconSettings(
+            useOriginalForeground = preferenceManager.paintedUseOriginalForeground.get(),
+            foregroundColor = preferenceManager.paintedForegroundColor.get(),
+            backgroundColor = preferenceManager.paintedBackgroundColor.get(),
+            shape = IconShape.fromName(preferenceManager.selectedIconShape.get()),
+        ),
+    )
+    val paintedIconSettings: StateFlow<PaintedIconSettings> = _paintedIconSettings.asStateFlow()
+
+    /**
+     * Applies the given [settings] and remembers them for the next start of the app.
+     */
+    fun updatePaintedIconSettings(settings: PaintedIconSettings) {
+        val previous = _paintedIconSettings.value
+        if (previous == settings) return
+        _paintedIconSettings.value = settings
+
+        if (settings.useOriginalForeground != previous.useOriginalForeground) {
+            preferenceManager.paintedUseOriginalForeground.set(settings.useOriginalForeground)
+        }
+        if (settings.foregroundColor != previous.foregroundColor) {
+            preferenceManager.paintedForegroundColor.set(settings.foregroundColor)
+        }
+        if (settings.backgroundColor != previous.backgroundColor) {
+            preferenceManager.paintedBackgroundColor.set(settings.backgroundColor)
+        }
+        if (settings.shape != previous.shape) {
+            preferenceManager.selectedIconShape.set(settings.shape.name)
+        }
     }
 
     /**
@@ -151,11 +204,10 @@ class AppsViewModel(
         _exportState.value = IconPackExportState.Building
         viewModelScope.launch {
             _exportState.value = try {
-                val apps = installedApps.value.filter { it.iconInfo != null }
                 val result = iconPackExportRepository.export(
-                    apps,
+                    installedApps.value,
                     selectedColors.value,
-                    selectedShape.value,
+                    _paintedIconSettings.value,
                 )
                 IconPackExportState.Saved(result.location, result.file)
             } catch (cancellation: CancellationException) {

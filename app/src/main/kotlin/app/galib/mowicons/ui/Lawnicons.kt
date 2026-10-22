@@ -22,8 +22,6 @@ import app.galib.mowicons.ui.destination.apps.appsDestination
 import app.galib.mowicons.ui.destination.contributors.Contributors
 import app.galib.mowicons.ui.destination.contributors.contributorsDestination
 import app.galib.mowicons.ui.destination.debugmenu.debugMenuDestination
-import app.galib.mowicons.ui.destination.home.Home
-import app.galib.mowicons.ui.destination.home.homeDestination
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import dev.zacsweers.metrox.viewmodel.MetroViewModelFactory
 import soup.compose.material.motion.animation.materialSharedAxisX
@@ -49,19 +47,14 @@ fun Lawnicons(
         LocalLawniconsActions provides LawniconsActions(isIconPicker, onSendResult),
     ) {
         val navigationState = rememberNavigationState(
-            startRoute = Home,
-            topLevelRoutes = setOf(Home, Apps),
+            startRoute = Apps,
+            topLevelRoutes = setOf(Apps),
         )
         val navigator = remember { Navigator(navigationState) }
         val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
         val slideDistance = rememberSlideDistance()
 
         val entryProvider = entryProvider {
-            homeDestination(
-                onNavigateToAbout = { navigator.navigate(About) },
-                onNavigateToApps = { navigator.navigate(Apps) },
-                isExpandedScreen = isExpandedScreen,
-            )
             debugMenuDestination(
                 isExpandedScreen = isExpandedScreen,
                 onBack = navigator::goBack,
@@ -82,7 +75,7 @@ fun Lawnicons(
             )
             appsDestination(
                 isExpandedScreen = isExpandedScreen,
-                onBack = navigator::goBack,
+                onNavigateToAbout = { navigator.navigate(About) },
             )
         }
 

@@ -16795,8 +16795,8 @@
   <item component="ComponentInfo{com.jesperh.showyoutubedislikes/com.jesperh.showyoutubedislikes.MainActivity}" drawable="show_youtube_dislikes" name="Show Youtube Dislikes" />
   <item component="ComponentInfo{com.allinone.callerid/com.allinone.callerid.start.StartActivity}" drawable="generic_dialer" name="Showcaller" />
   <item component="ComponentInfo{com.wirelessalien.android.moviedb/com.wirelessalien.android.moviedb.activity.MainActivity}" drawable="showcase" name="ShowCase" />
-  <item component="ComponentInfo{com.michaldrabik.showly2/com.michaldrabik.showly2.ui.main.MainActivity}" drawable="fritzapp_tv" name="Showly" />
-  <item component="ComponentInfo{com.michaldrabik.showly_oss/com.michaldrabik.showly_oss.ui.main.MainActivity}" drawable="fritzapp_tv" name="Showly OSS" />
+  <item component="ComponentInfo{com.michaldrabik.showly2/com.michaldrabik.showly2.ui.main.MainActivity}" drawable="showly" name="Showly" />
+  <item component="ComponentInfo{com.michaldrabik.showly_oss/com.michaldrabik.showly_oss.ui.main.MainActivity}" drawable="showly" name="Showly OSS" />
   <item component="ComponentInfo{com.shpock.android/com.shpock.android.ui.startup.ShpSplashScreen}" drawable="shpock" name="Shpock" />
   <item component="ComponentInfo{com.shriram.one/com.shriram.one.MainActivity}" drawable="shriram_one" name="Shriram One" />
   <item component="ComponentInfo{com.pinterest.shuffles/com.pinterest.shuffles.MainActivity}" drawable="shuffles_by_pinterest" name="Shuffles by Pinterest" />

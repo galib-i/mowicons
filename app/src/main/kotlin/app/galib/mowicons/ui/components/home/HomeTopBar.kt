@@ -61,11 +61,12 @@ fun HomeTopBar(
     isExpandedScreen: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val actions = LocalLawniconsActions.current
+    val lawniconsActions = LocalLawniconsActions.current
     val coroutineScope = rememberCoroutineScope()
 
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
+    // The bar slides out of the screen when the search is collapsed.
     val targetOffsetY = if (searchState.searchBarState.targetValue == SearchBarValue.Expanded) {
         0.dp
     } else {
@@ -88,7 +89,7 @@ fun HomeTopBar(
                     placeholder = {
                         Text(
                             stringResource(
-                                id = if (actions.isIconPicker) {
+                                id = if (lawniconsActions.isIconPicker) {
                                     R.string.search_bar_icon_picker
                                 } else {
                                     R.string.search_bar_hint
@@ -106,14 +107,16 @@ fun HomeTopBar(
             }
         }
 
-        AppBarWithSearch(
-            state = searchState.searchBarState,
-            inputField = inputField,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .offset { IntOffset(0, offsetY.roundToPx()) },
-        )
+        if (searchState.searchBarState.targetValue != SearchBarValue.Expanded) {
+            AppBarWithSearch(
+                state = searchState.searchBarState,
+                inputField = inputField,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .offset { IntOffset(0, offsetY.roundToPx()) },
+            )
+        }
 
         ResponsiveSearchBarContents(
             isExpandedScreen = isExpandedScreen,

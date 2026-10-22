@@ -72,7 +72,6 @@ class InstalledAppsRepositoryImpl(
                     label = resolveInfo.loadLabel(packageManager).toString(),
                     packageName = appInfo.packageName,
                     className = activityInfo.name,
-                    systemIcon = bitmap,
                     colors = bitmap.dominantColors(),
                 )
             }

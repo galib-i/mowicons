@@ -30,19 +30,31 @@
     <!-- Label for the About screen and toolbar action -->
     <string name="about">About</string>
 
-    <!-- Label for the installed apps screen and toolbar action -->
-    <string name="apps">Apps</string>
+    <!-- Label for the toggle which turns the colour picker of the apps screen on and off -->
+    <string name="change_color">Change colour</string>
 
-    <!-- Title of the installed apps screen, which shows the painted icons of the apps -->
-    <string name="painted_apps">Painted Apps</string>
+    <!-- The pickers of the apps screen -->
 
-    <!-- Label for the toggle which turns the color picker of the apps screen on and off -->
-    <string name="change_color">Change color</string>
+    <!-- Title of the section with the default settings of the painted icons -->
+    <string name="defaults">Defaults</string>
 
-    <!-- The shapes the painted icons can have -->
-
+    <!-- Title of the foreground picker of the apps screen -->
+    <string name="foreground_color">Foreground Colour:</string>
+    <!-- Title of the background picker of the apps screen -->
+    <string name="background_color">Background Colour:</string>
     <!-- Title of the shape picker of the apps screen -->
-    <string name="shape">Shape</string>
+    <string name="shape">Background Shape:</string>
+
+    <!-- Label of the button which sets the foreground of the painted icons to a hex colour -->
+    <string name="hex">HEX</string>
+    <!-- Label of the button which takes the foreground of the painted icons from the original icons -->
+    <string name="original_icons">Original</string>
+
+    <!-- Label of the menu item which resets the colour of an icon to the default one -->
+    <string name="default_colour">Default</string>
+
+    <!-- Label of the button which resets a colour to its default value -->
+    <string name="reset">Reset</string>
 
     <!-- The names of the shapes the painted icons can have -->
     <string name="shape_circle">Circle</string>

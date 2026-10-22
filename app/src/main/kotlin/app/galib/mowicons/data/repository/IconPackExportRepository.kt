@@ -25,10 +25,10 @@ import android.graphics.Paint
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.graphics.withClip
 import androidx.graphics.shapes.toPath
 import app.galib.mowicons.R
@@ -36,6 +36,7 @@ import app.galib.mowicons.data.export.AxmlWriter
 import app.galib.mowicons.data.model.IconInfo
 import app.galib.mowicons.data.model.IconShape
 import app.galib.mowicons.data.model.InstalledApp
+import app.galib.mowicons.data.model.PaintedIconSettings
 import com.android.apksig.ApkSigner
 import com.android.apksig.KeyConfig
 import dev.zacsweers.metro.AppScope
@@ -46,10 +47,12 @@ import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.OutputStream
 import java.security.KeyFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
+import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -69,13 +72,13 @@ interface IconPackExportRepository {
      * APK file, which can then be installed and used as an icon pack.
      *
      * @param selectedColors The colours picked by the user, keyed by package name.
-     * @param shape The shape the icons of the pack have.
+     * @param settings The settings which decide how the painted icons look.
      * @return The export result containing location and file.
      */
     suspend fun export(
         apps: List<InstalledApp>,
         selectedColors: Map<String, Int>,
-        shape: IconShape,
+        settings: PaintedIconSettings,
     ): ExportResult
 }
 
@@ -88,7 +91,7 @@ class IconPackExportRepositoryImpl(
     override suspend fun export(
         apps: List<InstalledApp>,
         selectedColors: Map<String, Int>,
-        shape: IconShape,
+        settings: PaintedIconSettings,
     ): ExportResult = withContext(Dispatchers.IO) {
         // The pack itself is themed with its own icon, so it is left out of the pack.
         val coveredApps = coveredApps(apps)
@@ -102,14 +105,21 @@ class IconPackExportRepositoryImpl(
                 template.outputStream().use { input.copyTo(it) }
             }
 
-            val backgroundColor = ContextCompat.getColor(application, R.color.primaryBackground)
             val defaultColor = ContextCompat.getColor(application, R.color.primaryForeground)
             val drawableNames = coveredApps.mapIndexed { index, _ -> "icon_%04d".format(index + 1) }
             val drawables = HashMap<String, ByteArray>(coveredApps.size)
             coveredApps.forEachIndexed { index, app ->
                 val iconInfo = requireNotNull(app.iconInfo)
-                val color = selectedColors[app.packageName] ?: app.colors.firstOrNull() ?: defaultColor
-                drawables[drawableNames[index]] = renderIcon(iconInfo, color, backgroundColor, shape)
+                val color = settings.foregroundColorFor(
+                    selectedColors[app.packageName],
+                    app.colors.firstOrNull(),
+                ) ?: defaultColor
+                drawables[drawableNames[index]] = renderIcon(
+                    iconInfo,
+                    color,
+                    settings.backgroundColor,
+                    settings.shape,
+                )
             }
             val appfilter = buildAppfilter(coveredApps, drawableNames)
             val plainTextAppfilter = buildPlainTextAppfilter(coveredApps, drawableNames)
@@ -122,7 +132,6 @@ class IconPackExportRepositoryImpl(
                     var hasAssetsAppfilter = false
                     while (entries.hasMoreElements()) {
                         val entry = entries.nextElement()
-                        Log.i("Export", "Entry: ${entry.name}, method=${entry.method}, size=${entry.size}")
                         if (entry.name.startsWith("META-INF/")) continue
                         if (entry.name == ASSETS_APPFILTER_PATH) hasAssetsAppfilter = true
                         val drawable = drawables[entry.name.substringAfterLast('/').substringBeforeLast('.')]
@@ -137,7 +146,7 @@ class IconPackExportRepositoryImpl(
                             newEntry.method = ZipEntry.STORED
                             newEntry.size = bytes.size.toLong()
                             newEntry.compressedSize = bytes.size.toLong()
-                            val crc = java.util.zip.CRC32().apply { update(bytes) }
+                            val crc = CRC32().apply { update(bytes) }
                             newEntry.crc = crc.value
                             alignEntry(newEntry, countingOut.count, 4)
                         } else {
@@ -197,7 +206,7 @@ class IconPackExportRepositoryImpl(
             ?: throw IOException("Could not load the icon ${iconInfo.drawableName}")
         val inset = (ICON_SIZE * 0.2f).toInt()
         drawable.setBounds(inset, inset, ICON_SIZE - inset, ICON_SIZE - inset)
-        androidx.core.graphics.drawable.DrawableCompat.setTint(drawable, color)
+        DrawableCompat.setTint(drawable, color)
         // The glyph is clipped to the shape, just like it is in the app.
         canvas.withClip(path) {
             drawable.draw(this)
@@ -246,9 +255,8 @@ class IconPackExportRepositoryImpl(
                 .replace("'", "&apos;")
             sb.append("    <item component=\"ComponentInfo{${app.packageName}/${app.className}}\" drawable=\"${drawableNames[index]}\" name=\"$escapedLabel\" />\n")
         }
-        sb.append("    <item ${packItemAttributes.joinToString(" ") { (name, value) ->
-            "$name=\"$value\""
-        }} />\n")
+        val packItem = packItemAttributes.joinToString(" ") { (name, value) -> "$name=\"$value\"" }
+        sb.append("    <item $packItem />\n")
         sb.append("</resources>")
         return sb.toString().toByteArray(Charsets.UTF_8)
     }
@@ -351,7 +359,7 @@ class IconPackExportRepositoryImpl(
     }
 }
 
-private class CountingOutputStream(private val out: java.io.OutputStream) : java.io.OutputStream() {
+private class CountingOutputStream(private val out: OutputStream) : OutputStream() {
     var count: Long = 0L
         private set
 

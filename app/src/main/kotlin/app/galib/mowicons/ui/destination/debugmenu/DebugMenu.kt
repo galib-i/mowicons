@@ -26,10 +26,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,15 +43,9 @@ import androidx.navigation3.runtime.NavKey
 import app.galib.mowicons.data.model.IconInfo
 import app.galib.mowicons.data.model.getFirstLabelAndComponent
 import app.galib.mowicons.data.model.splitByComponentName
-import app.galib.mowicons.data.repository.BasePreferenceManager
-import app.galib.mowicons.data.repository.InMemoryPreferenceStore
-import app.galib.mowicons.data.repository.PreferenceManager
 import app.galib.mowicons.ui.components.core.LawniconsScaffold
 import app.galib.mowicons.ui.components.core.ListRow
-import app.galib.mowicons.ui.components.core.ListRowDefaults
-import app.galib.mowicons.ui.components.core.ListRowLabel
 import app.galib.mowicons.ui.components.core.SimpleListRow
-import app.galib.mowicons.ui.theme.adaptiveSurfaceContainerColor
 import app.galib.mowicons.ui.theme.icon.Copy
 import app.galib.mowicons.ui.theme.icon.LawnIcons
 import app.galib.mowicons.ui.util.PreviewLawnicons
@@ -90,7 +82,6 @@ fun DebugMenu(
     val newIconsModel by viewModel.newIconsModel.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
-    val prefs = viewModel.preferenceManager
 
     val componentCount = remember(iconInfoModel) {
         iconInfoModel.iconInfo.splitByComponentName().size
@@ -102,17 +93,11 @@ fun DebugMenu(
         ListItemContent("Component count", componentCount),
     )
 
-    val boolPrefs = listOf(
-        prefs.forceEnableIconRequest,
-        prefs.isFirstLaunch,
-    )
-
     DebugMenuScreen(
         newIconComponents = remember(newIconsModel) {
             newIconsModel.iconInfo.splitByComponentName()
         },
         debugList = debugList,
-        boolPrefs = boolPrefs,
         onCopy = {
             context.copyTextToClipboard(it)
         },
@@ -126,7 +111,6 @@ fun DebugMenu(
 private fun DebugMenuScreen(
     newIconComponents: List<IconInfo>,
     debugList: List<ListItemContent>,
-    boolPrefs: List<BasePreferenceManager.BoolPref>,
     onCopy: (String) -> Unit,
     isExpandedScreen: Boolean,
     onBack: () -> Unit,
@@ -161,35 +145,6 @@ private fun DebugMenuScreen(
                 ) {
                     onCopy("${it.label}: ${it.value}")
                 }
-            }
-            item {
-                Spacer(Modifier.height(4.dp))
-            }
-            itemsIndexed(boolPrefs) { index, pref ->
-                val checked by pref.asState()
-                ListItem(
-                    checked = checked,
-                    onCheckedChange = pref::set,
-                    content = {
-                        ListRowLabel(pref.key)
-                    },
-                    colors = ListItemDefaults.colors(
-                        containerColor = adaptiveSurfaceContainerColor,
-                    ),
-                    modifier = Modifier.padding(horizontal = ListRowDefaults.basePadding),
-                    trailingContent = {
-                        Switch(
-                            checked = checked,
-                            onCheckedChange = pref::set,
-                            interactionSource = null,
-                        )
-                    },
-                    shapes = ListItemDefaults.segmentedShapes(
-                        index,
-                        boolPrefs.size,
-                        ListRowDefaults.singleItemShapes,
-                    ),
-                )
             }
             item {
                 Spacer(Modifier.height(8.dp))
@@ -260,15 +215,10 @@ private fun ListHeader(
 @Composable
 private fun DebugMenuScreenPreview() {
     PreviewProviders {
-        val prefs = PreferenceManager(InMemoryPreferenceStore())
-
         DebugMenuScreen(
             newIconComponents = SampleData.iconInfoList,
             debugList = listOf(
                 ListItemContent("Icon count", 100),
-            ),
-            boolPrefs = listOf(
-                prefs.forceEnableIconRequest,
             ),
             onCopy = {},
             isExpandedScreen = true,

@@ -124,45 +124,6 @@ class PreferenceManagerTest {
     }
 
     @Test
-    fun `in memory store notifies listeners for changed key`() {
-        val store = InMemoryPreferenceStore()
-        val changedKeys = mutableListOf<String>()
-        val listener = PreferenceChangeListener { key -> changedKeys += key }
-
-        store.registerListener(listener)
-        store.putBoolean("flag", true)
-        store.putInt("count", 3)
-        store.unregisterListener(listener)
-        store.putBoolean("ignored", false)
-
-        assertEquals(listOf("flag", "count"), changedKeys)
-    }
-
-    @Test
-    fun `in memory store notifies listeners for changed string key`() {
-        val store = InMemoryPreferenceStore()
-        val changedKeys = mutableListOf<String>()
-        val listener = PreferenceChangeListener { key -> changedKeys += key }
-
-        store.registerListener(listener)
-        store.putString("text", "value")
-        store.unregisterListener(listener)
-        store.putString("ignored", "value")
-
-        assertEquals(listOf("text"), changedKeys)
-    }
-
-    @Test
-    fun `preference manager force icon request defaults false and can be enabled`() {
-        val manager = PreferenceManager(InMemoryPreferenceStore())
-
-        assertFalse(manager.forceEnableIconRequest.get())
-        manager.forceEnableIconRequest.set(true)
-
-        assertTrue(manager.forceEnableIconRequest.get())
-    }
-
-    @Test
     fun `preference manager selected icon colors default to empty and can be set`() {
         val manager = PreferenceManager(InMemoryPreferenceStore())
 
