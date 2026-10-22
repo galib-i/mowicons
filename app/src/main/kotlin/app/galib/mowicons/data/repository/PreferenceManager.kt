@@ -128,6 +128,12 @@ class PreferenceManager(
     val selectedIconColors = StringPref("selected_icon_colors", "")
 
     /**
+     * The icons picked by the user for the apps, encoded as a JSON object which maps the
+     * package name of the app to the name of the drawable of the icon.
+     */
+    val selectedIconNames = StringPref("selected_icon_names", "")
+
+    /**
      * The name of the shape picked by the user for the painted icons.
      */
     val selectedIconShape = StringPref("selected_icon_shape", IconShape.Default.name)

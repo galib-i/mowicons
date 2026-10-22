@@ -32,11 +32,12 @@ import app.galib.mowicons.data.repository.InstalledAppsRepository
 import app.galib.mowicons.data.repository.PreferenceManager
 import app.galib.mowicons.data.repository.home.IconRepository
 import app.galib.mowicons.data.util.decodeSelectedColors
+import app.galib.mowicons.data.util.decodeSelectedIcons
 import app.galib.mowicons.data.util.encodeSelectedColors
+import app.galib.mowicons.data.util.encodeSelectedIcons
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
-import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -55,7 +56,7 @@ sealed interface IconPackExportState {
     data object Building : IconPackExportState
 
     /** The icon pack was saved, with the location of the file. */
-    data class Saved(val location: String, val file: File) : IconPackExportState
+    data class Saved(val location: String) : IconPackExportState
 
     /** The icon pack could not be built, with the reason. */
     data class Failed(val reason: String) : IconPackExportState
@@ -76,6 +77,9 @@ class AppsViewModel(
 
     val searchResults: StateFlow<IconInfoModel> = iconRepository.searchedIconInfoModel
 
+    /** All icons of the pack, which the user can pick from for the apps. */
+    val availableIcons: StateFlow<IconInfoModel> = iconRepository.iconInfoModel
+
     /**
      * Searches the icons for [query] in the current [searchMode].
      */
@@ -95,6 +99,16 @@ class AppsViewModel(
     }
 
     /**
+     * The icons picked by the user for apps, keyed by the package name of the app. The picks
+     * are restored from the preferences, so that they are remembered across restarts of the
+     * app.
+     */
+    private val _selectedIconNames = MutableStateFlow(
+        decodeSelectedIcons(preferenceManager.selectedIconNames.get()),
+    )
+    val selectedIconNames: StateFlow<Map<String, String>> = _selectedIconNames.asStateFlow()
+
+    /**
      * The apps installed on the device which are covered by the icon pack, each one paired
      * with the icon of the pack. Apps without an icon are left out, as their system icon
      * can't be painted.
@@ -102,11 +116,14 @@ class AppsViewModel(
     val installedApps: StateFlow<List<InstalledApp>> = combine(
         installedAppsRepository.installedApps,
         iconRepository.iconInfoModel,
-    ) { installedApps, iconInfoModel ->
+        _selectedIconNames,
+    ) { installedApps, iconInfoModel, selectedIconNames ->
         val iconsByComponent = mutableMapOf<Component, IconInfo>()
         val iconsByPackage = mutableMapOf<String, IconInfo>()
+        val iconsByName = mutableMapOf<String, IconInfo>()
 
         iconInfoModel.iconInfo.forEach { iconInfo ->
+            iconsByName.putIfAbsent(iconInfo.drawableName, iconInfo)
             iconInfo.componentNames.forEach { labelAndComponent ->
                 val component = labelAndComponent.component
                 iconsByComponent.putIfAbsent(component, iconInfo)
@@ -115,7 +132,9 @@ class AppsViewModel(
         }
 
         installedApps.mapNotNull { app ->
-            val iconInfo = iconsByComponent[Component(app.packageName, app.className)]
+            // An icon picked by the user wins over the icon the pack maps to the app.
+            val iconInfo = selectedIconNames[app.packageName]?.let(iconsByName::get)
+                ?: iconsByComponent[Component(app.packageName, app.className)]
                 ?: iconsByPackage[app.packageName]
             iconInfo?.let { app.copy(iconInfo = it) }
         }
@@ -151,6 +170,23 @@ class AppsViewModel(
     fun clearColor(packageName: String) {
         val colors = _selectedColors.updateAndGet { it - packageName }
         preferenceManager.selectedIconColors.set(encodeSelectedColors(colors))
+    }
+
+    /**
+     * Uses the icon with the given [drawableName] for the app with the given [packageName].
+     */
+    fun selectIcon(packageName: String, drawableName: String) {
+        val icons = _selectedIconNames.updateAndGet { it + (packageName to drawableName) }
+        preferenceManager.selectedIconNames.set(encodeSelectedIcons(icons))
+    }
+
+    /**
+     * Forgets the icon picked for the app with the given [packageName], so that the app uses
+     * the icon the pack maps to it again.
+     */
+    fun clearIcon(packageName: String) {
+        val icons = _selectedIconNames.updateAndGet { it - packageName }
+        preferenceManager.selectedIconNames.set(encodeSelectedIcons(icons))
     }
 
     /**
@@ -204,12 +240,12 @@ class AppsViewModel(
         _exportState.value = IconPackExportState.Building
         viewModelScope.launch {
             _exportState.value = try {
-                val result = iconPackExportRepository.export(
+                val location = iconPackExportRepository.export(
                     installedApps.value,
                     selectedColors.value,
                     _paintedIconSettings.value,
                 )
-                IconPackExportState.Saved(result.location, result.file)
+                IconPackExportState.Saved(location)
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (e: Exception) {

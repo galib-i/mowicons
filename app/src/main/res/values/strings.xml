@@ -13,6 +13,10 @@
     <string name="search_bar_hint">Search through %d icons</string>
     <!-- Hint shown in the search bar when picking an icon for a specific app -->
     <string name="search_bar_icon_picker">Pick an icon</string>
+    <!-- Hint shown in the search bar of the menu which picks the icon of an app -->
+    <string name="search_icons">Search icons</string>
+    <!-- Hint shown when the icon search has more results than can be listed -->
+    <string name="refine_search">Keep typing to narrow the results</string>
 
     <!-- Accessibility label for the search icon -->
     <string name="search">Search</string>
@@ -104,9 +108,6 @@
 
     <!-- Button which dismisses the export confirmation -->
     <string name="cancel">Cancel</string>
-
-    <!-- Button which opens the exported icon pack, so that it can be installed -->
-    <string name="install">Install</string>
 
     <!-- Snackbar content shown while the icon pack is being built -->
     <string name="export_painted_icons_building">Building the icon pack…</string>

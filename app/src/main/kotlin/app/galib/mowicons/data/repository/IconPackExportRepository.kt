@@ -57,11 +57,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
-data class ExportResult(
-    val location: String,
-    val file: File,
-)
-
 /**
  * Builds the painted icons into an icon pack and saves it as a plain file.
  */
@@ -73,13 +68,13 @@ interface IconPackExportRepository {
      *
      * @param selectedColors The colours picked by the user, keyed by package name.
      * @param settings The settings which decide how the painted icons look.
-     * @return The export result containing location and file.
+     * @return The location of the saved icon pack.
      */
     suspend fun export(
         apps: List<InstalledApp>,
         selectedColors: Map<String, Int>,
         settings: PaintedIconSettings,
-    ): ExportResult
+    ): String
 }
 
 @SingleIn(AppScope::class)
@@ -92,7 +87,7 @@ class IconPackExportRepositoryImpl(
         apps: List<InstalledApp>,
         selectedColors: Map<String, Int>,
         settings: PaintedIconSettings,
-    ): ExportResult = withContext(Dispatchers.IO) {
+    ): String = withContext(Dispatchers.IO) {
         // The pack itself is themed with its own icon, so it is left out of the pack.
         val coveredApps = coveredApps(apps)
         check(coveredApps.isNotEmpty()) { "There are no covered apps to export" }
@@ -168,10 +163,7 @@ class IconPackExportRepositoryImpl(
             }
 
             sign(unsigned, signed)
-            val savedLocation = save(signed)
-            val cacheFile = File(application.cacheDir, FILE_NAME)
-            signed.copyTo(cacheFile, overwrite = true)
-            ExportResult(savedLocation, cacheFile)
+            save(signed)
         } finally {
             template.delete()
             unsigned.delete()

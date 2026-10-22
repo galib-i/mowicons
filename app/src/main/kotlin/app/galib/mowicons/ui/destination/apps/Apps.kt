@@ -16,9 +16,6 @@
 
 package app.galib.mowicons.ui.destination.apps
 
-import android.content.Context
-import android.content.Intent
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,9 +28,9 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -42,7 +39,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -74,19 +75,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import app.galib.mowicons.R
+import app.galib.mowicons.data.model.IconInfo
 import app.galib.mowicons.data.model.IconInfoModel
 import app.galib.mowicons.data.model.IconShape
 import app.galib.mowicons.data.model.InstalledApp
@@ -99,12 +100,12 @@ import app.galib.mowicons.ui.components.home.search.rememberSearchState
 import app.galib.mowicons.ui.theme.icon.Check
 import app.galib.mowicons.ui.theme.icon.LawnIcons
 import app.galib.mowicons.ui.theme.icon.Pencil
+import app.galib.mowicons.ui.theme.icon.Search
 import app.galib.mowicons.ui.theme.icon.Wrench
 import app.galib.mowicons.ui.util.PreviewLawnicons
 import app.galib.mowicons.ui.util.PreviewProviders
 import app.galib.mowicons.ui.util.SampleData
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -112,6 +113,9 @@ import kotlinx.serialization.Serializable
 
 /** The size of the icons in the grid. */
 private val IconSize = 48.dp
+
+/** The maximum number of icons listed for an icon search in the app menu. */
+private const val MAX_SEARCH_RESULTS = 20
 
 @Serializable
 data object Apps : NavKey
@@ -134,6 +138,8 @@ fun EntryProviderScope<NavKey>.appsDestination(
 private data class AppsUiState(
     val installedApps: List<InstalledApp>,
     val selectedColors: Map<String, Int>,
+    val selectedIconNames: Map<String, String>,
+    val availableIcons: IconInfoModel,
     val paintedIcons: PaintedIconSettings,
     val exportState: IconPackExportState,
     val searchResults: IconInfoModel,
@@ -149,6 +155,8 @@ private fun Apps(
 ) {
     val installedApps by appsViewModel.installedApps.collectAsStateWithLifecycle()
     val selectedColors by appsViewModel.selectedColors.collectAsStateWithLifecycle()
+    val selectedIconNames by appsViewModel.selectedIconNames.collectAsStateWithLifecycle()
+    val availableIcons by appsViewModel.availableIcons.collectAsStateWithLifecycle()
     val paintedIcons by appsViewModel.paintedIconSettings.collectAsStateWithLifecycle()
     val exportState by appsViewModel.exportState.collectAsStateWithLifecycle()
     val searchResults by appsViewModel.searchResults.collectAsStateWithLifecycle()
@@ -159,6 +167,8 @@ private fun Apps(
         uiState = AppsUiState(
             installedApps = installedApps,
             selectedColors = selectedColors,
+            selectedIconNames = selectedIconNames,
+            availableIcons = availableIcons,
             paintedIcons = paintedIcons,
             exportState = exportState,
             searchResults = searchResults,
@@ -167,6 +177,8 @@ private fun Apps(
         onPaintedIconsChange = appsViewModel::updatePaintedIconSettings,
         onSelectColor = appsViewModel::selectColor,
         onClearColor = appsViewModel::clearColor,
+        onSelectIcon = appsViewModel::selectIcon,
+        onClearIcon = appsViewModel::clearIcon,
         onExportIconPack = appsViewModel::exportIconPack,
         onDismissExportResult = appsViewModel::dismissExportResult,
         onNavigateToAbout = onNavigateToAbout,
@@ -184,6 +196,8 @@ private fun AppsScreen(
     onPaintedIconsChange: (PaintedIconSettings) -> Unit,
     onSelectColor: (String, Int) -> Unit,
     onClearColor: (String) -> Unit,
+    onSelectIcon: (String, String) -> Unit,
+    onClearIcon: (String) -> Unit,
     onExportIconPack: () -> Unit,
     onDismissExportResult: () -> Unit,
     onNavigateToAbout: () -> Unit,
@@ -305,9 +319,13 @@ private fun AppsScreen(
                         app = app,
                         settings = uiState.paintedIcons,
                         selectedColor = uiState.selectedColors[app.packageName],
+                        selectedIconName = uiState.selectedIconNames[app.packageName],
+                        availableIcons = uiState.availableIcons.iconInfo,
                         isColorPickerEnabled = isColorPickerEnabled,
                         onSelectColor = { onSelectColor(app.packageName, it) },
                         onClearColor = { onClearColor(app.packageName) },
+                        onSelectIcon = { onSelectIcon(app.packageName, it.drawableName) },
+                        onClearIcon = { onClearIcon(app.packageName) },
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                 }
@@ -350,8 +368,6 @@ private fun ExportDialog(
     onExport: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val context = LocalContext.current
-
     AlertDialog(
         onDismissRequest = {
             if (state !is IconPackExportState.Building) onDismiss()
@@ -400,15 +416,9 @@ private fun ExportDialog(
                 ) {
                     Text(stringResource(R.string.export))
                 }
-                IconPackExportState.Building -> Unit
-                is IconPackExportState.Saved -> TextButton(
-                    onClick = {
-                        installIconPack(context, state.file)
-                        onDismiss()
-                    },
-                ) {
-                    Text(stringResource(R.string.install))
-                }
+                IconPackExportState.Building,
+                is IconPackExportState.Saved,
+                -> Unit
                 is IconPackExportState.Failed -> TextButton(onClick = onDismiss) {
                     Text(stringResource(R.string.ok))
                 }
@@ -429,35 +439,18 @@ private fun ExportDialog(
     )
 }
 
-/**
- * Opens the exported icon pack, so that the user can install it.
- */
-private fun installIconPack(context: Context, file: File) {
-    try {
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file,
-        )
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        Log.e("Apps", "Could not install APK", e)
-    }
-}
-
 @Composable
 private fun InstalledAppItem(
     app: InstalledApp,
     settings: PaintedIconSettings,
     selectedColor: Int?,
+    selectedIconName: String?,
+    availableIcons: List<IconInfo>,
     isColorPickerEnabled: Boolean,
     onSelectColor: (Int) -> Unit,
     onClearColor: () -> Unit,
+    onSelectIcon: (IconInfo) -> Unit,
+    onClearIcon: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val iconInfo = app.iconInfo ?: return
@@ -493,10 +486,12 @@ private fun InstalledAppItem(
                     }
                 },
             )
-            ColorMenu(
+            AppIconMenu(
                 colors = app.colors,
                 currentColor = color,
                 defaultColor = defaultColor,
+                selectedIconName = selectedIconName,
+                availableIcons = availableIcons,
                 expanded = showColors,
                 onSelectColor = {
                     onSelectColor(it)
@@ -508,6 +503,14 @@ private fun InstalledAppItem(
                     } else {
                         onClearColor()
                     }
+                    showColors = false
+                },
+                onSelectIcon = {
+                    onSelectIcon(it)
+                    showColors = false
+                },
+                onClearIcon = {
+                    onClearIcon()
                     showColors = false
                 },
                 onDismissRequest = { showColors = false },
@@ -562,12 +565,19 @@ private val TitleIndent = 16.dp
 /**
  * The height of the segmented button which picks the foreground of the painted icons.
  */
-private val SegmentedButtonHeight = 32.dp
+private val SegmentedButtonHeight = 28.dp
 
 /**
  * The height of the field in which the colours are entered.
  */
-private val ColorFieldHeight = 48.dp
+private val ColorFieldHeight = 40.dp
+
+/** The content padding of the compact entry fields. */
+private val CompactFieldContentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+
+/** The content padding of the compact segmented buttons. */
+private val CompactSegmentedButtonContentPadding =
+    PaddingValues(horizontal = 12.dp, vertical = 4.dp)
 
 /**
  * A picker which lets the user pick the foreground of the painted icons.
@@ -601,6 +611,7 @@ private fun PaintedForegroundPicker(
                     },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                     modifier = Modifier.height(SegmentedButtonHeight),
+                    contentPadding = CompactSegmentedButtonContentPadding,
                     // The check mark is left out, as the selected button is already
                     // highlighted by its background.
                     icon = {},
@@ -615,6 +626,7 @@ private fun PaintedForegroundPicker(
                     },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                     modifier = Modifier.height(SegmentedButtonHeight),
+                    contentPadding = CompactSegmentedButtonContentPadding,
                     icon = {},
                     label = {
                         SegmentedButtonLabel(stringResource(R.string.original_icons))
@@ -793,6 +805,7 @@ private fun SegmentedButtonLabel(
  * A field which lets the user enter a colour as a hex string, next to a swatch of it and a
  * button which resets the colour to [resetColor].
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HexColorField(
     color: Int,
@@ -800,7 +813,18 @@ private fun HexColorField(
     onColorChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var digits by remember(color) { mutableStateOf(color.toHexDigits()) }
+    val digits = rememberTextFieldState(color.toHexDigits())
+    val digitsText = digits.text.toString()
+
+    LaunchedEffect(color) {
+        val hexDigits = color.toHexDigits()
+        if (digits.text.toString() != hexDigits) {
+            digits.setTextAndPlaceCursorAtEnd(hexDigits)
+        }
+    }
+    LaunchedEffect(digitsText) {
+        digitsText.hexToColorOrNull()?.let(onColorChange)
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -810,35 +834,37 @@ private fun HexColorField(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(Color(digits.hexToColorOrNull() ?: color)),
+                .background(Color(digitsText.hexToColorOrNull() ?: color)),
         )
         OutlinedTextField(
-            value = digits,
-            onValueChange = { value ->
-                val newDigits = value.uppercase()
-                    .filter { it.isDigit() || it in 'A'..'F' }
-                    .take(6)
-                digits = newDigits
-                newDigits.hexToColorOrNull()?.let(onColorChange)
+            state = digits,
+            inputTransformation = HexInputTransformation,
+            lineLimits = TextFieldLineLimits.SingleLine,
+            prefix = {
+                Text(
+                    text = "#",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             },
-            prefix = { Text("#") },
-            placeholder = { Text("RRGGBB") },
-            isError = digits.isNotEmpty() && digits.length < 6,
-            singleLine = true,
+            placeholder = {
+                Text(
+                    text = "RRGGBB",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            isError = digitsText.isNotEmpty() && digitsText.length < 6,
             textStyle = MaterialTheme.typography.bodyMedium,
-            // heightIn, instead of height, so that the text is laid out within the
-            // requested height instead of being squeezed into it.
+            contentPadding = CompactFieldContentPadding,
             modifier = Modifier
                 .padding(start = 12.dp)
                 .weight(1f)
-                .heightIn(min = ColorFieldHeight),
+                .height(ColorFieldHeight),
         )
         TextButton(
-            onClick = {
-                digits = resetColor.toHexDigits()
-                onColorChange(resetColor)
-            },
-            modifier = Modifier.padding(start = 4.dp),
+            onClick = { digits.setTextAndPlaceCursorAtEnd(resetColor.toHexDigits()) },
+            modifier = Modifier
+                .padding(start = 4.dp)
+                .height(ColorFieldHeight),
         ) {
             Text(stringResource(R.string.reset))
         }
@@ -846,57 +872,181 @@ private fun HexColorField(
 }
 
 /**
- * A menu with the colours of the original icon of the app, which lets the user pick the
- * foreground colour of the icon of the pack.
+ * Keeps the text field of a colour limited to six hexadecimal digits.
+ */
+private val HexInputTransformation = InputTransformation {
+    val current = asCharSequence().toString()
+    val filtered = current.uppercase()
+        .filter { it.isDigit() || it in 'A'..'F' }
+        .take(6)
+    if (filtered != current) {
+        replace(0, length, filtered)
+    }
+}
+
+/**
+ * The menu which opens when an app is tapped while the pencil is enabled.
  *
- * The first entry resets the icon to the default foreground colour: the one picked for all of
- * the icons when their colour is not taken from the original icon, and the default colour of
- * the painted icons otherwise.
+ * It lets the user pick the foreground colour of the app and search the icons of the pack,
+ * so that the app can be given an icon of its own. The search results replace the colours
+ * while a query is entered, and the reset button clears a picked icon.
+ *
+ * The first colour entry resets the icon to the default foreground colour: the one picked
+ * for all of the icons when their colour is not taken from the original icon, and the
+ * default colour of the painted icons otherwise.
  */
 @Composable
-private fun ColorMenu(
+private fun AppIconMenu(
     colors: List<Int>,
     currentColor: Int?,
     defaultColor: Int?,
+    selectedIconName: String?,
+    availableIcons: List<IconInfo>,
     expanded: Boolean,
     onSelectColor: (Int) -> Unit,
     onUseDefaultColor: () -> Unit,
+    onSelectIcon: (IconInfo) -> Unit,
+    onClearIcon: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
+    val queryState = rememberTextFieldState()
+    val query = queryState.text.toString()
+
+    // Start with all of the colours each time the menu opens, instead of the last search.
+    LaunchedEffect(expanded) {
+        if (expanded) queryState.setTextAndPlaceCursorAtEnd("")
+    }
+
+    val matchingIcons = remember(query, availableIcons) {
+        if (query.isBlank()) {
+            emptyList()
+        } else {
+            availableIcons.filter { icon ->
+                icon.drawableName.contains(query, ignoreCase = true) ||
+                    icon.componentNames.any { it.label.contains(query, ignoreCase = true) }
+            }
+        }
+    }
+    // DropdownMenu sizes itself with intrinsics, which lazy lists don't support. The
+    // results are therefore added directly to the menu's column, and only the first few
+    // matches are shown so that the menu stays manageable.
+    val visibleIcons = matchingIcons.take(MAX_SEARCH_RESULTS)
+
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
+        modifier = Modifier.width(300.dp),
     ) {
-        if (defaultColor != null) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.default_colour)) },
-                onClick = onUseDefaultColor,
-                leadingIcon = { ColorSwatch(defaultColor) },
-                trailingIcon = {
-                    if (currentColor == defaultColor) {
-                        Icon(
-                            imageVector = LawnIcons.Check,
-                            contentDescription = null,
-                        )
-                    }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 4.dp, top = 4.dp),
+        ) {
+            OutlinedTextField(
+                state = queryState,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.search_icons),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 },
+                leadingIcon = {
+                    Icon(
+                        imageVector = LawnIcons.Search,
+                        contentDescription = null,
+                    )
+                },
+                textStyle = MaterialTheme.typography.bodyMedium,
+                contentPadding = CompactFieldContentPadding,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(ColorFieldHeight),
             )
+            TextButton(
+                onClick = onClearIcon,
+                enabled = selectedIconName != null,
+                modifier = Modifier.height(ColorFieldHeight),
+            ) {
+                Text(stringResource(R.string.reset))
+            }
         }
-        colors.forEach { color ->
+        if (query.isBlank()) {
+            if (defaultColor != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.default_colour)) },
+                    onClick = onUseDefaultColor,
+                    leadingIcon = { ColorSwatch(defaultColor) },
+                    trailingIcon = {
+                        if (currentColor == defaultColor) {
+                            Icon(
+                                imageVector = LawnIcons.Check,
+                                contentDescription = null,
+                            )
+                        }
+                    },
+                )
+            }
+            // The colours are always listed, even when the icon has only one, so that it
+            // can still be picked and reset to.
+            colors.forEach { color ->
+                DropdownMenuItem(
+                    text = { Text(color.toHexString()) },
+                    onClick = { onSelectColor(color) },
+                    leadingIcon = { ColorSwatch(color) },
+                    trailingIcon = {
+                        // The default entry already marks the colour when it is the same.
+                        if (color == currentColor && color != defaultColor) {
+                            Icon(
+                                imageVector = LawnIcons.Check,
+                                contentDescription = null,
+                            )
+                        }
+                    },
+                )
+            }
+        } else if (matchingIcons.isEmpty()) {
             DropdownMenuItem(
-                text = { Text(color.toHexString()) },
-                onClick = { onSelectColor(color) },
-                leadingIcon = { ColorSwatch(color) },
-                trailingIcon = {
-                    // The default entry already marks the colour when it is the same.
-                    if (color == currentColor && color != defaultColor) {
-                        Icon(
-                            imageVector = LawnIcons.Check,
-                            contentDescription = null,
-                        )
-                    }
-                },
+                text = { Text(stringResource(R.string.no_items_found, query)) },
+                onClick = {},
+                enabled = false,
             )
+        } else {
+            visibleIcons.forEach { icon ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = icon.label,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    onClick = { onSelectIcon(icon) },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(icon.drawableId),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    },
+                    trailingIcon = {
+                        if (icon.drawableName == selectedIconName) {
+                            Icon(
+                                imageVector = LawnIcons.Check,
+                                contentDescription = null,
+                            )
+                        }
+                    },
+                )
+            }
+            if (matchingIcons.size > visibleIcons.size) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.refine_search)) },
+                    onClick = {},
+                    enabled = false,
+                )
+            }
         }
     }
 }
@@ -953,6 +1103,8 @@ private fun AppsScreenPreview() {
                     ),
                 ),
                 selectedColors = mapOf("com.android.email" to 0xFFD93025.toInt()),
+                selectedIconNames = emptyMap(),
+                availableIcons = IconInfoModel(SampleData.iconInfoList, SampleData.iconInfoList.size),
                 paintedIcons = PaintedIconSettings(
                     useOriginalForeground = true,
                     foregroundColor = 0xFFC6C6C6.toInt(),
@@ -966,6 +1118,8 @@ private fun AppsScreenPreview() {
             onPaintedIconsChange = {},
             onSelectColor = { _, _ -> },
             onClearColor = {},
+            onSelectIcon = { _, _ -> },
+            onClearIcon = {},
             onExportIconPack = {},
             onDismissExportResult = {},
             onNavigateToAbout = {},

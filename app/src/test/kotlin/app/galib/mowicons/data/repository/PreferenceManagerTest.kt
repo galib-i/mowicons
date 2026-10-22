@@ -134,6 +134,16 @@ class PreferenceManagerTest {
     }
 
     @Test
+    fun `preference manager selected icon names default to empty and can be set`() {
+        val manager = PreferenceManager(InMemoryPreferenceStore())
+
+        assertEquals("", manager.selectedIconNames.get())
+        manager.selectedIconNames.set("""{"com.android.email":"email"}""")
+
+        assertEquals("""{"com.android.email":"email"}""", manager.selectedIconNames.get())
+    }
+
+    @Test
     fun `preference manager selected icon shape defaults to the circle and can be set`() {
         val manager = PreferenceManager(InMemoryPreferenceStore())
 
