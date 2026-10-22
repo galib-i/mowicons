@@ -19,7 +19,7 @@ class LawniconsApplication :
         forceDarkMode()
     }
 
-    /** Mowicons is a dark-only app, the ui mode is forced to night. */
+    /** Painticons is a dark-only app, the ui mode is forced to night. */
     @Suppress("DEPRECATION")
     private fun forceDarkMode() {
         val configuration = Configuration(resources.configuration)

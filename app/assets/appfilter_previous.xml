@@ -9107,8 +9107,8 @@
   <item component="ComponentInfo{app.lawnchair.lawnicons/app.lawnchair.lawnicons.MainActivity}" drawable="lawnicons" name="Lawnicons" />
   <item component="ComponentInfo{app.lawnchair.lawnicons.play/app.lawnchair.lawnicons.MainActivity}" drawable="lawnicons" name="Lawnicons" />
   <item component="ComponentInfo{app.lawnchair.lawnicons.light/app.lawnchair.lawnicons.MainActivity}" drawable="lawnicons" name="Lawnicons Light" />
-  <item component="ComponentInfo{app.galib.mowicons/app.galib.mowicons.MainActivity}" drawable="lawnicons" name="Mowicons" />
-  <item component="ComponentInfo{app.galib.mowicons.play/app.galib.mowicons.MainActivity}" drawable="lawnicons" name="Mowicons" />
+  <item component="ComponentInfo{app.galib.mowicons/app.galib.mowicons.MainActivity}" drawable="infinite_painter" name="Painticons" />
+  <item component="ComponentInfo{app.galib.mowicons.play/app.galib.mowicons.MainActivity}" drawable="infinite_painter" name="Painticons" />
   <item component="ComponentInfo{pk.layers.twa/pk.layers.twa.LauncherActivity}" drawable="layers" name="Layers" />
   <item component="ComponentInfo{com.itsvks.layouteditor/com.itsvks.layouteditor.activities.HomeActivity}" drawable="layout_editor" name="Layout Editor" />
   <item component="ComponentInfo{com.instagram.layout/com.instagram.layout.LayoutActivity}" drawable="layout_from_instagram" name="Layout from Instagram" />

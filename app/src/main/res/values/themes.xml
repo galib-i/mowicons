@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Lawnicons.SplashScreen" parent="Theme.SplashScreen">
+    <style name="Theme.Painticons.SplashScreen" parent="Theme.SplashScreen">
         <item name="isLightTheme">false</item>
         <item name="windowSplashScreenBackground">@color/primaryBackground</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen</item>

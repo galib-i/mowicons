@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Mowicons is a dark-only app: these are the single (dark) definitions,
+    <!-- Painticons is a dark-only app: these are the single (dark) definitions,
          there are no light/night variants. The same fixed hex pair is used by
          the icon pack drawables and by the launcher icon, so the icons always
          look the same regardless of the system theme. -->

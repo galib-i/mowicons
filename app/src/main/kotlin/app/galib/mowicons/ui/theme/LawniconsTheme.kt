@@ -43,7 +43,7 @@ private val darkScheme = darkColorScheme(
     surfaceContainerHighest = surfaceContainerHighestDark,
 )
 
-/** Mowicons is a dark-only app, the color scheme is always the dark one. */
+/** Painticons is a dark-only app, the color scheme is always the dark one. */
 @Composable
 fun LawniconsTheme(
     content: @Composable () -> Unit,

@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        // Mowicons is a dark-only app, the system bars always use light icons.
+        // Painticons is a dark-only app, the system bars always use light icons.
         insetsController.isAppearanceLightNavigationBars = false
         insetsController.isAppearanceLightStatusBars = false
 

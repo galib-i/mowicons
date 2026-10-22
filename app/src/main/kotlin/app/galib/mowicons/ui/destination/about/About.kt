@@ -117,7 +117,7 @@ private fun About(
                         ),
                 ) {
                     Text(
-                        text = "Mowicons ${BuildConfig.VERSION_NAME.split(' ')[0]}",
+                        text = "Painticons ${BuildConfig.VERSION_NAME.split(' ')[0]}",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(top = 12.dp),

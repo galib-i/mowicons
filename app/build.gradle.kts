@@ -81,7 +81,7 @@ android {
     productFlavors {
         create("app") {
             dimension = "product"
-            resValue("string", "apps_name", "Mowicons")
+            resValue("string", "apps_name", "Painticons")
         }
     }
     sourceSets.getByName("app") {
@@ -260,7 +260,7 @@ androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
             with(output) {
-                val newApkName = "Mowicons ${versionNameProvider.get()} v${versionCodeProvider.get()}_${variant.buildType}.apk"
+                val newApkName = "Painticons ${versionNameProvider.get()} v${versionCodeProvider.get()}_${variant.buildType}.apk"
                 outputFileName = newApkName
             }
         }

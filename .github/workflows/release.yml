@@ -66,7 +66,7 @@ jobs:
       - name: Find APK file
         id: apk
         run: |
-          APK=$(find app/build/outputs -name "Mowicons*_release.apk" | head -1)
+          APK=$(find app/build/outputs -name "Painticons*_release.apk" | head -1)
           echo "apk=$APK" >> $GITHUB_OUTPUT
 
       - name: Create git tag
@@ -79,10 +79,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Mowicons ${{ steps.version.outputs.versionName }}"
+          name: "Painticons ${{ steps.version.outputs.versionName }}"
           tag_name: "v${{ steps.version.outputs.versionName }}"
           body: |
-            ## Mowicons ${{ steps.version.outputs.versionName }}
+            ## Painticons ${{ steps.version.outputs.versionName }}
 
             ### What's new
             See [commit history](https://github.com/${{ github.repository }}/commits/v${{ steps.version.outputs.versionName }}) for changes.

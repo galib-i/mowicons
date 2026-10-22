@@ -4,14 +4,14 @@
   <foreground>
     <layer-list>
       <item>
-        <inset android:inset="32%" android:drawable="@drawable/mowicons_foreground"/>
+        <inset android:inset="32%" android:drawable="@drawable/painticons_foreground"/>
       </item>
     </layer-list>
   </foreground>
   <monochrome>
     <layer-list>
       <item>
-        <inset android:inset="28%" android:drawable="@drawable/mowicons_foreground"/>
+        <inset android:inset="28%" android:drawable="@drawable/painticons_foreground"/>
       </item>
     </layer-list>
   </monochrome>
