@@ -27,10 +27,10 @@ val versionCodeProvider = providers.provider { versionCode }
 
 android {
     compileSdk = 37
-    namespace = "app.galib.mowicons"
+    namespace = "app.galib.painticons"
 
     defaultConfig {
-        applicationId = "app.galib.mowicons"
+        applicationId = "app.galib.painticons"
         minSdk = 26
         targetSdk = compileSdk
         versionCode = versionCode
@@ -260,7 +260,7 @@ androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
             with(output) {
-                val newApkName = "Painticons ${versionNameProvider.get()} v${versionCodeProvider.get()}_${variant.buildType}.apk"
+                val newApkName = "Painticons ${versionNameProvider.get()}.apk"
                 outputFileName = newApkName
             }
         }

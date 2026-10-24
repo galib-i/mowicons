@@ -66,21 +66,32 @@ jobs:
       - name: Find APK file
         id: apk
         run: |
-          APK=$(find app/build/outputs -name "Painticons*_release.apk" | head -1)
+          echo "All APKs found:"
+          find app/build/outputs -name "*.apk"
+
+          APK=$(find app/build/outputs -name "*.apk" -path "*release*" ! -name "*unsigned*" | head -1)
+
+          if [ -z "$APK" ]; then
+            echo "::error::No signed release APK found"
+            exit 1
+          fi
+
+          echo "Using: $APK"
           echo "apk=$APK" >> $GITHUB_OUTPUT
 
       - name: Create git tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag "v${{ steps.version.outputs.versionName }}"
-          git push origin "v${{ steps.version.outputs.versionName }}"
+          git tag -f "v${{ steps.version.outputs.versionName }}"
+          git push -f origin "v${{ steps.version.outputs.versionName }}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: "Painticons ${{ steps.version.outputs.versionName }}"
           tag_name: "v${{ steps.version.outputs.versionName }}"
+          fail_on_unmatched_files: true
           body: |
             ## Painticons ${{ steps.version.outputs.versionName }}
 

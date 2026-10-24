@@ -1,6 +1,6 @@
 # Painticons
 
-A colourful fork of Lawnicons.
+Generate colourful Lawnicons.
 <p align="center">
   <img width="200" alt="Not painted icon pack" src="https://github.com/user-attachments/assets/a465a7c8-2c0f-4f14-bcb5-a2f02d68a0ea" />
   &nbsp;&nbsp;
